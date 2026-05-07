@@ -37,6 +37,7 @@
                         (Stato: <?php echo htmlspecialchars($gara['stato']); ?>)
                         <br>
                         <a href="<?php echo BASE_URL; ?>/gare/setup/<?php echo $gara['id']; ?>" class="btn" style="display:inline-block; margin-top:5px; background:#0056b3; color:white; text-decoration:none; padding:5px 10px; font-size:0.9em; border-radius:4px;">Setup Gara</a>
+                        <a href="<?php echo BASE_URL; ?>/muretto/index/<?php echo $gara['id']; ?>" class="btn" style="display:inline-block; margin-top:5px; background:#dc3545; color:white; text-decoration:none; padding:5px 10px; font-size:0.9em; border-radius:4px; margin-left: 5px;">Vai al Muretto</a>
                     </li>
                 <?php endforeach; ?>
             </ul>
