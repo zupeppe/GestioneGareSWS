@@ -45,12 +45,17 @@ class Gara {
      * @return bool True se successo, False altrimenti
      */
     public function crea($dati) {
-        $sql = "INSERT INTO gare (nome_gara, data_evento, durata_minuti, stato) VALUES (:nome_gara, :data_evento, :durata_minuti, 'setup')";
+        $sql = "INSERT INTO gare (nome_gara, data_evento, durata_minuti, min_stint, tempo_minimo_pit, durata_max_stint, durata_min_stint, stato) 
+                VALUES (:nome_gara, :data_evento, :durata_minuti, :min_stint, :tempo_minimo_pit, :durata_max_stint, :durata_min_stint, 'setup')";
         $stmt = $this->db->prepare($sql);
         return $stmt->execute([
             ':nome_gara' => $dati['nome_gara'],
             ':data_evento' => $dati['data_evento'],
-            ':durata_minuti' => $dati['durata_minuti'] ?? 0
+            ':durata_minuti' => $dati['durata_minuti'] ?? 0,
+            ':min_stint' => $dati['min_stint'] ?? 0,
+            ':tempo_minimo_pit' => $dati['tempo_minimo_pit'] ?? 0,
+            ':durata_max_stint' => $dati['durata_max_stint'] ?? 0,
+            ':durata_min_stint' => (!empty($dati['durata_min_stint']) ? $dati['durata_min_stint'] : null)
         ]);
     }
 
@@ -75,13 +80,25 @@ class Gara {
      * @return bool True se successo, False altrimenti
      */
     public function aggiorna($id, $dati) {
-        $sql = "UPDATE gare SET nome_gara = :nome_gara, data_evento = :data_evento, durata_minuti = :durata_minuti WHERE id = :id";
+        $sql = "UPDATE gare SET 
+                nome_gara = :nome_gara, 
+                data_evento = :data_evento, 
+                durata_minuti = :durata_minuti,
+                min_stint = :min_stint,
+                tempo_minimo_pit = :tempo_minimo_pit,
+                durata_max_stint = :durata_max_stint,
+                durata_min_stint = :durata_min_stint
+                WHERE id = :id";
         $stmt = $this->db->prepare($sql);
         return $stmt->execute([
             ':id' => $id,
             ':nome_gara' => $dati['nome_gara'],
             ':data_evento' => $dati['data_evento'],
-            ':durata_minuti' => $dati['durata_minuti'] ?? 0
+            ':durata_minuti' => $dati['durata_minuti'] ?? 0,
+            ':min_stint' => $dati['min_stint'] ?? 0,
+            ':tempo_minimo_pit' => $dati['tempo_minimo_pit'] ?? 0,
+            ':durata_max_stint' => $dati['durata_max_stint'] ?? 0,
+            ':durata_min_stint' => (!empty($dati['durata_min_stint']) ? $dati['durata_min_stint'] : null)
         ]);
     }
 }

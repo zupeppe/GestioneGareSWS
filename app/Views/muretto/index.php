@@ -31,7 +31,12 @@
         th { background-color: #0056b3; color: white; }
         .nav-link { display: inline-block; margin-bottom: 15px; text-decoration: none; color: #0056b3; }
         
-        .dati-globali { display: flex; justify-content: space-around; background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; font-size: 1.3em; border: 1px solid #ccc; }
+        .pannello-superiore { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .dati-globali, .pannello-strategia { background: #f8f9fa; padding: 15px; border-radius: 5px; font-size: 1.2em; border: 1px solid #ccc; }
+        .pannello-strategia { text-align: left; }
+        
+        @media (max-width: 768px) { .pannello-superiore { grid-template-columns: 1fr; } }
+        .riga-allerta { background-color: #f8d7da !important; color: #721c24; border: 2px solid #f5c6cb; }
     </style>
 </head>
 <body>
@@ -42,9 +47,26 @@
             <h1><?php echo htmlspecialchars($gara['nome_gara']); ?> - MURETTO BOX</h1>
         </div>
         
-        <div class="dati-globali">
-            <div>Tempo di Gara Residuo: <strong><?php echo htmlspecialchars($tempoResiduoHHMM); ?></strong></div>
-            <div>Soste Effettuate: <strong><?php echo htmlspecialchars($sosteEffettuate); ?></strong></div>
+        <div class="pannello-superiore">
+            <div class="dati-globali">
+                <h3 style="margin-top:0;">Dati Generali</h3>
+                <div style="margin-bottom: 5px;">Tempo di Gara Residuo: <strong><?php echo htmlspecialchars($tempoResiduoHHMM); ?></strong></div>
+                <div>Soste Effettuate: <strong><?php echo htmlspecialchars($strategia['pit_fatti']); ?> / <?php echo htmlspecialchars($strategia['pit_minimi']); ?> minime</strong></div>
+            </div>
+            
+            <div class="pannello-strategia" style="border-left: 5px solid <?php echo $strategia['colore_strategia']; ?>;">
+                <h3 style="margin-top:0;">Pannello Strategia</h3>
+                <div style="margin-bottom: 5px;">Pit obbligatori rimanenti: <strong><?php echo htmlspecialchars($strategia['pit_rimanenti_obbligatori']); ?></strong></div>
+                <div style="margin-bottom: 5px;">Tempo Max Copribile: <strong><?php echo htmlspecialchars(\App\Core\TimeHelper::daMinutiaHHMM($strategia['tempo_massimo_copribile'])); ?></strong></div>
+                <div>
+                    Stato: <strong style="color: <?php echo $strategia['colore_strategia']; ?>;"><?php echo htmlspecialchars($strategia['stato_strategia']); ?></strong>
+                    <?php if ($strategia['stato_strategia'] === 'OK'): ?>
+                        <br><span style="font-size: 0.9em;">(Pit "Jolly" a disposizione: <strong><?php echo $strategia['jolly_disponibili']; ?></strong>)</span>
+                    <?php else: ?>
+                        <br><span style="font-size: 0.9em; color: #dc3545;">(Pit extra necessari: <strong><?php echo $strategia['pit_extra_necessari']; ?></strong>)</span>
+                    <?php endif; ?>
+                </div>
+            </div>
         </div>
 
         <?php if (isset($_SESSION['error'])): ?>
@@ -104,43 +126,66 @@
                 <tr>
                     <th>N° Stint</th>
                     <th>Pilota</th>
-                    <th>Ingresso</th>
-                    <th>Tempo in Pista</th>
-                    <th>Uscita</th>
+                    <th>Ingresso (HH:MM)</th>
+                    <th>Tempo in Pista (HH:MM)</th>
+                    <th>Uscita (HH:MM)</th>
                 </tr>
             </thead>
             <tbody>
                 <?php 
                 $numero_stint = 1;
+                $is_primo = true;
                 foreach ($tuttiStint as $stint): 
                     $ingressoHHMM = \App\Core\TimeHelper::daMinutiaHHMM($stint['minuto_ingresso']);
                     
-                    if ($stint['durata_minuti'] !== null) {
-                        $durataHHMM = \App\Core\TimeHelper::daMinutiaHHMM($stint['durata_minuti']);
-                        $uscitaHHMM = \App\Core\TimeHelper::daMinutiaHHMM($stint['minuto_ingresso'] + $stint['durata_minuti']);
+                    $durata_minuti = $stint['durata_minuti'];
+                    $alert_class = '';
+                    if ($durata_minuti !== null) {
+                        $durataHHMM = \App\Core\TimeHelper::daMinutiaHHMM($durata_minuti);
+                        $uscitaHHMM = \App\Core\TimeHelper::daMinutiaHHMM($stint['minuto_ingresso'] + $durata_minuti);
+                        if ($gara['durata_max_stint'] > 0 && $durata_minuti > $gara['durata_max_stint']) {
+                            $alert_class = 'riga-allerta';
+                        }
                     } else {
                         $durataHHMM = 'In Corso';
                         $uscitaHHMM = '-';
                     }
                 ?>
-                    <tr style="<?php echo $stint['durata_minuti'] === null ? 'background-color: #fff3cd;' : ''; ?>">
+                    <tr class="<?php echo $durata_minuti === null ? 'box-attivo' : $alert_class; ?>" style="<?php echo $durata_minuti === null ? 'background-color: #fff3cd;' : ''; ?>">
                         <td><?php echo $numero_stint++; ?></td>
                         <td><strong><?php echo htmlspecialchars($stint['cognome'] . ' ' . $stint['nome']); ?></strong></td>
-                        <td><?php echo htmlspecialchars($ingressoHHMM); ?></td>
                         <td>
-                            <?php if ($stint['durata_minuti'] !== null): ?>
+                            <?php if ($is_primo): ?>
+                                <form action="<?php echo BASE_URL; ?>/muretto/modificaIngressoPrimoStint/<?php echo $gara['id']; ?>" method="POST" style="display:inline-flex; gap:5px; justify-content:center; align-items:center;">
+                                    <input type="hidden" name="stint_id" value="<?php echo $stint['id']; ?>">
+                                    <input type="text" name="ingresso" value="<?php echo htmlspecialchars($ingressoHHMM); ?>" required style="width: 80px; padding: 5px; text-align:center;" pattern="[0-9]{2}:[0-9]{2}">
+                                    <button type="submit" class="btn-piccolo">Applica</button>
+                                </form>
+                            <?php else: ?>
+                                <?php echo htmlspecialchars($ingressoHHMM); ?>
+                                <div style="font-size:0.8em; color:#666;">(+<?php echo htmlspecialchars($gara['tempo_minimo_pit']); ?>m pit)</div>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <?php if ($durata_minuti !== null): ?>
                                 <form action="<?php echo BASE_URL; ?>/muretto/modificaDurata/<?php echo $gara['id']; ?>" method="POST" style="display:inline-flex; gap:5px; justify-content:center; align-items:center;">
                                     <input type="hidden" name="stint_id" value="<?php echo $stint['id']; ?>">
                                     <input type="text" name="durata" value="<?php echo htmlspecialchars($durataHHMM); ?>" required style="width: 80px; padding: 5px; text-align:center;" pattern="[0-9]{2}:[0-9]{2}">
                                     <button type="submit" class="btn-piccolo">Aggiorna</button>
                                 </form>
+                                <?php if($alert_class): ?>
+                                    <div style="font-size:0.8em; font-weight:bold; margin-top:4px;">SUPERATO MAX STINT!</div>
+                                <?php endif; ?>
                             <?php else: ?>
                                 <span style="color: #856404; font-weight:bold;">In Corso</span>
                             <?php endif; ?>
                         </td>
                         <td><?php echo htmlspecialchars($uscitaHHMM); ?></td>
                     </tr>
-                <?php endforeach; ?>
+                <?php 
+                    $is_primo = false;
+                endforeach; 
+                ?>
                 <?php if (empty($tuttiStint)): ?>
                     <tr><td colspan="5">Nessuno stint registrato per questa gara.</td></tr>
                 <?php endif; ?>

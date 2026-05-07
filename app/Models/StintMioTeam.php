@@ -6,11 +6,12 @@ require_once dirname(__DIR__, 2) . '/config/Database.php';
 use Database;
 use PDO;
 use App\Core\TimeHelper;
+use App\Models\Gara;
 
 /**
  * Classe StintMioTeam
  * 
- * Modello per la gestione degli stint dei piloti con logica a catena (timeline).
+ * Modello per la gestione degli stint dei piloti con logica a catena (timeline) e pit stop.
  */
 class StintMioTeam {
     private $db;
@@ -20,33 +21,49 @@ class StintMioTeam {
     }
 
     /**
-     * Ricalcola a cascata tutti i minuti di ingresso per la gara.
+     * Ricalcola a cascata tutti i minuti di ingresso per la gara, considerando il tempo di pit stop.
      * 
      * @param int $gara_id L'ID della gara
      * @return void
      */
     public function ricalcolaTimeline($gara_id) {
+        // Recupera i parametri della gara (es. tempo_minimo_pit)
+        require_once __DIR__ . '/Gara.php';
+        $garaModel = new Gara();
+        $gara = $garaModel->ottieniPerId($gara_id);
+        $tempo_pit = isset($gara['tempo_minimo_pit']) ? (int)$gara['tempo_minimo_pit'] : 0;
+
         // Recupera tutti gli stint della gara ordinati per ID (cronologicamente)
-        $sql = "SELECT id, durata_minuti FROM stint_mio_team WHERE gara_id = :gara_id ORDER BY id ASC";
+        $sql = "SELECT id, minuto_ingresso, durata_minuti FROM stint_mio_team WHERE gara_id = :gara_id ORDER BY id ASC";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':gara_id' => $gara_id]);
         $stints = $stmt->fetchAll();
 
-        $corrente_minuto_ingresso = 0;
+        if (empty($stints)) return;
 
         $updateSql = "UPDATE stint_mio_team SET minuto_ingresso = :minuto_ingresso WHERE id = :id";
         $updateStmt = $this->db->prepare($updateSql);
 
+        $is_primo_stint = true;
+        $corrente_minuto_ingresso = 0;
+
         foreach ($stints as $stint) {
-            // Aggiorna il minuto di ingresso
+            if ($is_primo_stint) {
+                // Il primo stint mantiene il suo minuto_ingresso attuale (che può essere stato modificato manualmente)
+                $corrente_minuto_ingresso = (int)$stint['minuto_ingresso'];
+                $is_primo_stint = false;
+            }
+
+            // Aggiorna il minuto di ingresso (utile per gli stint successivi al primo)
             $updateStmt->execute([
                 ':minuto_ingresso' => $corrente_minuto_ingresso,
                 ':id' => $stint['id']
             ]);
 
-            // Se lo stint ha una durata (è chiuso), avanza il contatore del tempo per il prossimo
+            // Avanza il contatore del tempo per il prossimo stint
             if ($stint['durata_minuti'] !== null) {
-                $corrente_minuto_ingresso += $stint['durata_minuti'];
+                // Il prossimo stint inizierà all'uscita di questo + il tempo del pit
+                $corrente_minuto_ingresso += $stint['durata_minuti'] + $tempo_pit;
             }
         }
     }
@@ -60,7 +77,11 @@ class StintMioTeam {
      * @return bool
      */
     public function iniziaStint($gara_id, $pilota_id) {
-        // Il minuto d'ingresso verrà comunque corretto da ricalcolaTimeline, ma lo inseriamo calcolandolo al volo
+        require_once __DIR__ . '/Gara.php';
+        $garaModel = new Gara();
+        $gara = $garaModel->ottieniPerId($gara_id);
+        $tempo_pit = isset($gara['tempo_minimo_pit']) ? (int)$gara['tempo_minimo_pit'] : 0;
+
         // Trovo l'ultimo stint per prendere la sua uscita
         $sqlUltimo = "SELECT minuto_ingresso, durata_minuti FROM stint_mio_team WHERE gara_id = :gara_id ORDER BY id DESC LIMIT 1";
         $stmtUltimo = $this->db->prepare($sqlUltimo);
@@ -69,7 +90,10 @@ class StintMioTeam {
 
         $minuto_ingresso = 0;
         if ($ultimo && $ultimo['durata_minuti'] !== null) {
-            $minuto_ingresso = $ultimo['minuto_ingresso'] + $ultimo['durata_minuti'];
+            $minuto_ingresso = $ultimo['minuto_ingresso'] + $ultimo['durata_minuti'] + $tempo_pit;
+        } elseif ($ultimo && $ultimo['durata_minuti'] === null) {
+            // C'è uno stint attivo, non dovrebbe succedere perché controllato dal controller
+            return false;
         }
 
         $sql = "INSERT INTO stint_mio_team (gara_id, pilota_id, minuto_ingresso, durata_minuti) VALUES (:gara_id, :pilota_id, :minuto_ingresso, NULL)";
@@ -79,6 +103,29 @@ class StintMioTeam {
             ':pilota_id' => $pilota_id,
             ':minuto_ingresso' => $minuto_ingresso
         ]);
+    }
+
+    /**
+     * Aggiorna il minuto di ingresso del PRIMO stint e ricalcola.
+     * 
+     * @param int $id L'ID del primo stint
+     * @param string $nuovo_ingresso_hhmm L'ingresso in HH:MM
+     * @param int $gara_id
+     * @return bool
+     */
+    public function aggiornaIngresso($id, $nuovo_ingresso_hhmm, $gara_id) {
+        require_once dirname(__DIR__) . '/Core/TimeHelper.php';
+        $minuti = \App\Core\TimeHelper::daHHMMaMinuti($nuovo_ingresso_hhmm);
+
+        $sql = "UPDATE stint_mio_team SET minuto_ingresso = :minuto_ingresso WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        $result = $stmt->execute([
+            ':id' => $id,
+            ':minuto_ingresso' => $minuti
+        ]);
+
+        $this->ricalcolaTimeline($gara_id);
+        return $result;
     }
 
     /**
@@ -145,28 +192,6 @@ class StintMioTeam {
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':gara_id' => $gara_id]);
         return $stmt->fetch();
-    }
-
-    /**
-     * Recupera tutti gli stint completati da un pilota.
-     * 
-     * @param int $gara_id L'ID della gara
-     * @param int $pilota_id L'ID del pilota
-     * @return array
-     */
-    public function ottieniStintCompletatiPilota($gara_id, $pilota_id) {
-        $sql = "
-            SELECT * 
-            FROM stint_mio_team
-            WHERE gara_id = :gara_id AND pilota_id = :pilota_id AND durata_minuti IS NOT NULL
-            ORDER BY id ASC
-        ";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([
-            ':gara_id' => $gara_id,
-            ':pilota_id' => $pilota_id
-        ]);
-        return $stmt->fetchAll();
     }
 
     /**

@@ -6,6 +6,10 @@ CREATE TABLE gare (
     nome_gara VARCHAR(255) NOT NULL,
     data_evento DATETIME NOT NULL,
     durata_minuti INT DEFAULT 0,
+    min_stint INT DEFAULT 0,
+    tempo_minimo_pit INT DEFAULT 0,
+    durata_max_stint INT DEFAULT 0,
+    durata_min_stint INT,
     stato ENUM('setup', 'in_corso', 'finita') DEFAULT 'setup'
 ) ENGINE=InnoDB;
 

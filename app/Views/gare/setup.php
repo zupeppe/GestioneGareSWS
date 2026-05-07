@@ -59,6 +59,26 @@
                         <label for="durata_minuti">Durata (Minuti):</label>
                         <input type="number" id="durata_minuti" name="durata_minuti" value="<?php echo htmlspecialchars($gara['durata_minuti']); ?>" min="0" required>
                     </div>
+                    
+                    <hr style="margin: 20px 0;">
+                    <h3 style="margin-top:0;">Regolamento Sportivo</h3>
+                    <div class="form-group">
+                        <label for="min_stint">Pit Stop Minimi Obbligatori:</label>
+                        <input type="number" id="min_stint" name="min_stint" value="<?php echo htmlspecialchars($gara['min_stint'] ?? 0); ?>" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="tempo_minimo_pit">Tempo Minimo Pit (minuti fermi ai box):</label>
+                        <input type="number" id="tempo_minimo_pit" name="tempo_minimo_pit" value="<?php echo htmlspecialchars($gara['tempo_minimo_pit'] ?? 0); ?>" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="durata_max_stint">Durata Max Stint (minuti guida):</label>
+                        <input type="number" id="durata_max_stint" name="durata_max_stint" value="<?php echo htmlspecialchars($gara['durata_max_stint'] ?? 0); ?>" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="durata_min_stint">Durata Min Stint (minuti) [Opzionale]:</label>
+                        <input type="number" id="durata_min_stint" name="durata_min_stint" value="<?php echo htmlspecialchars($gara['durata_min_stint'] ?? ''); ?>" min="0">
+                    </div>
+                    
                     <button type="submit" class="btn" style="background:#0056b3;">Salva Parametri</button>
                 </form>
             </div>
