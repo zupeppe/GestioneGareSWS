@@ -32,6 +32,7 @@ class PilotiController {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $nome = trim($_POST['nome'] ?? '');
             $cognome = trim($_POST['cognome'] ?? '');
+            $redirect_to = $_POST['redirect_to'] ?? '/piloti/index';
 
             if ($nome !== '' && $cognome !== '') {
                 $pilotaModel = new PilotaMioTeam();
@@ -40,9 +41,12 @@ class PilotiController {
                     'cognome' => $cognome
                 ]);
             }
+            
+            // Pattern Post-Redirect-Get
+            header('Location: ' . BASE_URL . $redirect_to);
+            exit;
         }
         
-        // Pattern Post-Redirect-Get
         header('Location: ' . BASE_URL . '/piloti/index');
         exit;
     }

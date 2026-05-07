@@ -45,11 +45,12 @@ class Gara {
      * @return bool True se successo, False altrimenti
      */
     public function crea($dati) {
-        $sql = "INSERT INTO gare (nome_gara, data_evento, stato) VALUES (:nome_gara, :data_evento, 'setup')";
+        $sql = "INSERT INTO gare (nome_gara, data_evento, durata_minuti, stato) VALUES (:nome_gara, :data_evento, :durata_minuti, 'setup')";
         $stmt = $this->db->prepare($sql);
         return $stmt->execute([
             ':nome_gara' => $dati['nome_gara'],
-            ':data_evento' => $dati['data_evento']
+            ':data_evento' => $dati['data_evento'],
+            ':durata_minuti' => $dati['durata_minuti'] ?? 0
         ]);
     }
 
@@ -64,5 +65,23 @@ class Gara {
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':id' => $id]);
         return $stmt->fetch();
+    }
+
+    /**
+     * Aggiorna i dati principali di una gara.
+     * 
+     * @param int $id L'ID della gara
+     * @param array $dati Array associativo con 'nome_gara', 'data_evento', 'durata_minuti'
+     * @return bool True se successo, False altrimenti
+     */
+    public function aggiorna($id, $dati) {
+        $sql = "UPDATE gare SET nome_gara = :nome_gara, data_evento = :data_evento, durata_minuti = :durata_minuti WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([
+            ':id' => $id,
+            ':nome_gara' => $dati['nome_gara'],
+            ':data_evento' => $dati['data_evento'],
+            ':durata_minuti' => $dati['durata_minuti'] ?? 0
+        ]);
     }
 }

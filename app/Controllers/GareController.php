@@ -4,6 +4,8 @@ namespace App\Controllers;
 use App\Models\Gara;
 use App\Models\Team;
 use App\Models\IscrittoGara;
+use App\Models\FilePit;
+use App\Models\PilotiGara;
 
 /**
  * Classe GareController
@@ -56,7 +58,127 @@ class GareController {
         $iscrittoModel = new IscrittoGara();
         $iscritti = $iscrittoModel->ottieniPerGara($gara_id);
 
+        $filePitModel = new FilePit();
+        $filePit = $filePitModel->ottieniPerGara($gara_id);
+
+        $pilotiGaraModel = new PilotiGara();
+        $pilotiRoster = $pilotiGaraModel->ottieniPerGara($gara_id);
+        $pilotiDisponibili = $pilotiGaraModel->ottieniNonIscritti($gara_id);
+
         require_once BASE_PATH . '/app/Views/gare/setup.php';
+    }
+
+    /**
+     * Aggiorna i parametri base di una gara (nome, data, durata).
+     * 
+     * @return void
+     */
+    public function aggiornaParametri() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $gara_id = $_POST['gara_id'] ?? null;
+            $nome_gara = trim($_POST['nome_gara'] ?? '');
+            $data_evento = trim($_POST['data_evento'] ?? '');
+            $durata_minuti = (int)($_POST['durata_minuti'] ?? 0);
+
+            if ($gara_id && $nome_gara !== '' && $data_evento !== '') {
+                $garaModel = new Gara();
+                $garaModel->aggiorna($gara_id, [
+                    'nome_gara' => $nome_gara,
+                    'data_evento' => $data_evento,
+                    'durata_minuti' => $durata_minuti
+                ]);
+                $_SESSION['success'] = "Parametri gara aggiornati con successo.";
+            } else {
+                $_SESSION['error'] = "Campi obbligatori mancanti per l'aggiornamento gara.";
+            }
+            header('Location: ' . BASE_URL . '/gare/setup/' . $gara_id);
+            exit;
+        }
+        header('Location: ' . BASE_URL . '/home/index');
+        exit;
+    }
+
+    /**
+     * Aggiunge una fila pit (corsia box) alla gara.
+     * 
+     * @return void
+     */
+    public function aggiungiFilaPit() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $gara_id = $_POST['gara_id'] ?? null;
+            $nome_colore = trim($_POST['nome_colore'] ?? '');
+            $ordine = (int)($_POST['ordine'] ?? 0);
+
+            if ($gara_id && $nome_colore !== '') {
+                $filePitModel = new FilePit();
+                $filePitModel->crea([
+                    'gara_id' => $gara_id,
+                    'nome_colore' => $nome_colore,
+                    'ordine' => $ordine
+                ]);
+                $_SESSION['success'] = "Fila Pit aggiunta.";
+            } else {
+                $_SESSION['error'] = "Nome colore richiesto per aggiungere fila pit.";
+            }
+            header('Location: ' . BASE_URL . '/gare/setup/' . $gara_id);
+            exit;
+        }
+        header('Location: ' . BASE_URL . '/home/index');
+        exit;
+    }
+
+    /**
+     * Rimuove una fila pit.
+     * 
+     * @param int $id ID della fila pit
+     * @param int $gara_id ID della gara (per redirect)
+     * @return void
+     */
+    public function rimuoviFilaPit($id, $gara_id) {
+        $filePitModel = new FilePit();
+        $filePitModel->elimina($id);
+        $_SESSION['success'] = "Fila Pit rimossa.";
+        header('Location: ' . BASE_URL . '/gare/setup/' . $gara_id);
+        exit;
+    }
+
+    /**
+     * Aggiunge un pilota del team al roster della gara.
+     * 
+     * @return void
+     */
+    public function aggiungiPilotaGara() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $gara_id = $_POST['gara_id'] ?? null;
+            $pilota_id = $_POST['pilota_id'] ?? null;
+
+            if ($gara_id && $pilota_id) {
+                $pilotiGaraModel = new PilotiGara();
+                $pilotiGaraModel->crea($gara_id, $pilota_id);
+                $_SESSION['success'] = "Pilota aggiunto al roster della gara.";
+            } else {
+                $_SESSION['error'] = "Pilota non selezionato.";
+            }
+            header('Location: ' . BASE_URL . '/gare/setup/' . $gara_id);
+            exit;
+        }
+        header('Location: ' . BASE_URL . '/home/index');
+        exit;
+    }
+
+    /**
+     * Rimuove un pilota dal roster della gara.
+     * 
+     * @param int $id ID dell'associazione pilota_gara
+     * @param int $gara_id ID della gara (per redirect)
+     * @return void
+     */
+    public function rimuoviPilotaGara($id, $gara_id) {
+        $pilotiGaraModel = new PilotiGara();
+        $pilotiGaraModel->elimina($id);
+        $_SESSION['success'] = "Pilota rimosso dal roster.";
+        header('Location: ' . BASE_URL . '/gare/setup/' . $gara_id);
+        exit;
     }
 
     /**

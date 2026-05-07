@@ -5,6 +5,7 @@ CREATE TABLE gare (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nome_gara VARCHAR(255) NOT NULL,
     data_evento DATETIME NOT NULL,
+    durata_minuti INT DEFAULT 0,
     stato ENUM('setup', 'in_corso', 'finita') DEFAULT 'setup'
 ) ENGINE=InnoDB;
 
@@ -63,4 +64,20 @@ CREATE TABLE monitoraggio_pit (
     FOREIGN KEY (iscritto_gara_id) REFERENCES iscritti_gara(id) ON DELETE CASCADE,
     FOREIGN KEY (kart_lasciato_id) REFERENCES kart_gara(id) ON DELETE SET NULL,
     FOREIGN KEY (kart_preso_id) REFERENCES kart_gara(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE file_pit_gara (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    gara_id INT NOT NULL,
+    nome_colore VARCHAR(50) NOT NULL,
+    ordine INT DEFAULT 0,
+    FOREIGN KEY (gara_id) REFERENCES gare(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE piloti_gara (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    gara_id INT NOT NULL,
+    pilota_id INT NOT NULL,
+    FOREIGN KEY (gara_id) REFERENCES gare(id) ON DELETE CASCADE,
+    FOREIGN KEY (pilota_id) REFERENCES piloti_mio_team(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
