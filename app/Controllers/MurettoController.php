@@ -4,11 +4,12 @@ namespace App\Controllers;
 use App\Models\Gara;
 use App\Models\PilotiGara;
 use App\Models\StintMioTeam;
+use App\Core\TimeHelper;
 
 /**
  * Classe MurettoController
  * 
- * Gestisce la dashboard live per gli stint e la strategia di gara.
+ * Gestisce la dashboard live per gli stint, utilizzando la Timeline a cascata.
  */
 class MurettoController {
     /**
@@ -30,20 +31,32 @@ class MurettoController {
         $roster = $pilotiGaraModel->ottieniPerGara($gara_id);
 
         $stintModel = new StintMioTeam();
+        
+        // Per ricalcolare o mostrare i dati ho bisogno di tutti gli stint
         $stintAttivo = $stintModel->ottieniStintAttivo($gara_id);
+        $tuttiStint = $stintModel->ottieniTuttiStintGara($gara_id);
 
-        // Calcola i minuti totali guidati per ogni pilota del roster
-        foreach ($roster as &$pilota) {
-            $pilota['minuti_guidati'] = 0;
-            $stintCompletati = $stintModel->ottieniStintCompletatiPilota($gara_id, $pilota['pilota_id']);
-            
-            foreach ($stintCompletati as $stint) {
-                // durata = ingresso - uscita (poiché è a ritroso, es. 600 - 540 = 60)
-                $durata = $stint['minuto_ingresso'] - $stint['minuto_uscita'];
-                $pilota['minuti_guidati'] += $durata;
+        $sosteEffettuate = 0;
+        $minutoUltimaUscita = 0;
+
+        foreach ($tuttiStint as $stint) {
+            if ($stint['durata_minuti'] !== null) {
+                $sosteEffettuate++;
+                // L'ultimo minuto coperto dagli stint è l'ingresso + la durata
+                $uscita = $stint['minuto_ingresso'] + $stint['durata_minuti'];
+                if ($uscita > $minutoUltimaUscita) {
+                    $minutoUltimaUscita = $uscita;
+                }
             }
         }
-        unset($pilota); // Rompi il riferimento per sicurezza
+
+        // Tempo residuo
+        $minutiResidui = $gara['durata_minuti'] - $minutoUltimaUscita;
+        if ($minutiResidui < 0) {
+            $minutiResidui = 0;
+        }
+        require_once dirname(__DIR__) . '/Core/TimeHelper.php';
+        $tempoResiduoHHMM = \App\Core\TimeHelper::daMinutiaHHMM($minutiResidui);
 
         require_once BASE_PATH . '/app/Views/muretto/index.php';
     }
@@ -57,20 +70,19 @@ class MurettoController {
     public function inizia($gara_id) {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pilota_id = $_POST['pilota_id'] ?? null;
-            $minuto_ingresso = $_POST['minuto_ingresso'] ?? null;
 
-            if ($pilota_id && $minuto_ingresso !== null && $minuto_ingresso !== '') {
+            if ($pilota_id) {
                 $stintModel = new StintMioTeam();
                 
                 // Controllo se c'è già uno stint attivo
                 if ($stintModel->ottieniStintAttivo($gara_id)) {
                     $_SESSION['error'] = "C'è già un pilota in pista! Termina il suo stint prima di farne salire un altro.";
                 } else {
-                    $stintModel->iniziaStint($gara_id, $pilota_id, (int)$minuto_ingresso);
-                    $_SESSION['success'] = "Stint iniziato.";
+                    $stintModel->iniziaStint($gara_id, $pilota_id);
+                    $_SESSION['success'] = "Stint iniziato. La timeline è scattata in avanti.";
                 }
             } else {
-                $_SESSION['error'] = "Dati mancanti per iniziare lo stint.";
+                $_SESSION['error'] = "Seleziona un pilota per iniziare lo stint.";
             }
             
             header('Location: ' . BASE_URL . '/muretto/index/' . $gara_id);
@@ -89,14 +101,40 @@ class MurettoController {
     public function termina($gara_id) {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stint_id = $_POST['stint_id'] ?? null;
-            $minuto_uscita = $_POST['minuto_uscita'] ?? null;
+            $durata = $_POST['durata'] ?? null;
 
-            if ($stint_id && $minuto_uscita !== null && $minuto_uscita !== '') {
+            if ($stint_id && $durata !== null && $durata !== '') {
                 $stintModel = new StintMioTeam();
-                $stintModel->terminaStint($stint_id, (int)$minuto_uscita);
-                $_SESSION['success'] = "Stint terminato con successo.";
+                $stintModel->terminaStint($stint_id, $durata, $gara_id);
+                $_SESSION['success'] = "Stint terminato e timeline ricalcolata.";
             } else {
-                $_SESSION['error'] = "Minuto di uscita mancante.";
+                $_SESSION['error'] = "Durata (Tempo in Pista) mancante.";
+            }
+            
+            header('Location: ' . BASE_URL . '/muretto/index/' . $gara_id);
+            exit;
+        }
+        header('Location: ' . BASE_URL . '/home/index');
+        exit;
+    }
+
+    /**
+     * Modifica la durata di uno stint chiuso e propaga le modifiche.
+     * 
+     * @param int $gara_id L'ID della gara (per ricalcolo e redirect)
+     * @return void
+     */
+    public function modificaDurata($gara_id) {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $stint_id = $_POST['stint_id'] ?? null;
+            $durata = $_POST['durata'] ?? null;
+
+            if ($stint_id && $durata !== null && $durata !== '') {
+                $stintModel = new StintMioTeam();
+                $stintModel->aggiornaDurata($stint_id, $durata, $gara_id);
+                $_SESSION['success'] = "Durata stint aggiornata! Tutta la timeline successiva è slittata di conseguenza.";
+            } else {
+                $_SESSION['error'] = "Dati mancanti per l'aggiornamento.";
             }
             
             header('Location: ' . BASE_URL . '/muretto/index/' . $gara_id);
