@@ -7,9 +7,9 @@
 - [x] Creazione script SQL per le tabelle.
 - [x] Model `Gara.php` e `HomeController.php` di base.
 
-## [IN CORSO] Sprint 2: Anagrafica e Setup Gara
+## [COMPLETATO] Sprint 2: Anagrafica e Setup Gara
 - [x] CRUD per `piloti_mio_team` e `teams`.
-- [ ] Interfaccia per iscrivere i team e assegnare i numeri di gara.
+- [x] Interfaccia per iscrivere i team e assegnare i numeri di gara.
 
 ## [DA FARE] Sprint 3: Gestione Stint (Backend)
 - [ ] Logica avvio/fine timer per pilota.

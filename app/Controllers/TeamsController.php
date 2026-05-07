@@ -31,12 +31,18 @@ class TeamsController {
     public function store() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $nome_team = trim($_POST['nome_team'] ?? '');
+            $redirect_to = $_POST['redirect_to'] ?? '';
 
             if ($nome_team !== '') {
                 $teamModel = new Team();
                 $teamModel->crea([
                     'nome_team' => $nome_team
                 ]);
+            }
+
+            if ($redirect_to !== '') {
+                header('Location: ' . BASE_URL . $redirect_to);
+                exit;
             }
         }
         

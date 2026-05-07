@@ -94,4 +94,19 @@ class Team {
         $stmt = $this->db->prepare($sql);
         return $stmt->execute([':id' => $id]);
     }
+
+    /**
+     * Recupera tutti i team che NON sono ancora iscritti a una determinata gara.
+     * 
+     * @param int $gara_id L'ID della gara
+     * @return array Array dei team non iscritti
+     */
+    public function ottieniNonIscritti($gara_id) {
+        $sql = "SELECT * FROM teams 
+                WHERE id NOT IN (SELECT team_id FROM iscritti_gara WHERE gara_id = :gara_id) 
+                ORDER BY nome_team ASC";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':gara_id' => $gara_id]);
+        return $stmt->fetchAll();
+    }
 }

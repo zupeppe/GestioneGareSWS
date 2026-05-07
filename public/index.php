@@ -5,6 +5,9 @@
  * Gestisce tutte le richieste in ingresso e le indirizza al controller appropriato.
  */
 
+// Avvia la sessione per i messaggi flash
+session_start();
+
 // Percorso base dell'applicazione
 define('BASE_PATH', dirname(__DIR__));
 // Modifica in base a dove si trova il progetto (es. '/GestioneGareSWS' in locale, '/endurance' su Aruba)
