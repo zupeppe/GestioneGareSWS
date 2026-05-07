@@ -7,7 +7,8 @@
 
 // Percorso base dell'applicazione
 define('BASE_PATH', dirname(__DIR__));
-
+// Modifica in base a dove si trova il progetto (es. '/GestioneGareSWS' in locale, '/endurance' su Aruba)
+define('BASE_URL', '/GestioneGareSWS');
 // Autoloader semplice per caricare automaticamente le classi
 spl_autoload_register(function ($class) {
     // Sostituisce il namespace "App" con "app" per rispettare l'alberatura

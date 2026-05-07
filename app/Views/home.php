@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SWS Endurance Manager</title>
-    <link rel="stylesheet" href="/GestioneGareSWS/public/css/style.css">
+   <link rel="stylesheet" href="<?php echo BASE_URL; ?>/public/css/style.css">
+<script src="<?php echo BASE_URL; ?>/public/js/main.js"></script>
 </head>
 <body>
     <div class="container">
