@@ -52,4 +52,46 @@ class Team {
             ':nome_team' => $dati['nome_team']
         ]);
     }
+
+    /**
+     * Recupera un team per ID.
+     * 
+     * @param int $id ID del team
+     * @return array|false Dati del team o false se non trovato
+     */
+    public function ottieniPerId($id) {
+        $sql = "SELECT * FROM teams WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':id' => $id]);
+        return $stmt->fetch();
+    }
+
+    /**
+     * Aggiorna i dati di un team esistente.
+     * Utilizza prepared statements per sicurezza.
+     * 
+     * @param int $id ID del team da aggiornare
+     * @param array $dati Array associativo contenente 'nome_team'
+     * @return bool True in caso di successo, False altrimenti
+     */
+    public function aggiorna($id, $dati) {
+        $sql = "UPDATE teams SET nome_team = :nome_team WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([
+            ':id' => $id,
+            ':nome_team' => $dati['nome_team']
+        ]);
+    }
+
+    /**
+     * Elimina un team tramite il suo ID.
+     * 
+     * @param int $id ID del team da eliminare
+     * @return bool True in caso di successo, False altrimenti
+     */
+    public function elimina($id) {
+        $sql = "DELETE FROM teams WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([':id' => $id]);
+    }
 }

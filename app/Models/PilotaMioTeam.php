@@ -53,4 +53,47 @@ class PilotaMioTeam {
             ':cognome' => $dati['cognome']
         ]);
     }
+
+    /**
+     * Recupera un pilota per ID.
+     * 
+     * @param int $id ID del pilota
+     * @return array|false Dati del pilota o false se non trovato
+     */
+    public function ottieniPerId($id) {
+        $sql = "SELECT * FROM piloti_mio_team WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':id' => $id]);
+        return $stmt->fetch();
+    }
+
+    /**
+     * Aggiorna i dati di un pilota esistente.
+     * Utilizza prepared statements per sicurezza.
+     * 
+     * @param int $id ID del pilota da aggiornare
+     * @param array $dati Array associativo contenente 'nome' e 'cognome'
+     * @return bool True in caso di successo, False altrimenti
+     */
+    public function aggiorna($id, $dati) {
+        $sql = "UPDATE piloti_mio_team SET nome = :nome, cognome = :cognome WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([
+            ':id' => $id,
+            ':nome' => $dati['nome'],
+            ':cognome' => $dati['cognome']
+        ]);
+    }
+
+    /**
+     * Elimina un pilota tramite il suo ID.
+     * 
+     * @param int $id ID del pilota da eliminare
+     * @return bool True in caso di successo, False altrimenti
+     */
+    public function elimina($id) {
+        $sql = "DELETE FROM piloti_mio_team WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([':id' => $id]);
+    }
 }

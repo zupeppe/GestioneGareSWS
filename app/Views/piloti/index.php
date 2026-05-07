@@ -44,17 +44,20 @@
             <table>
                 <thead>
                     <tr>
-                        <th>ID</th>
                         <th>Nome</th>
                         <th>Cognome</th>
+                        <th>Azioni</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($piloti as $pilota): ?>
                         <tr>
-                            <td><?php echo htmlspecialchars($pilota['id']); ?></td>
                             <td><?php echo htmlspecialchars($pilota['nome']); ?></td>
                             <td><?php echo htmlspecialchars($pilota['cognome']); ?></td>
+                            <td>
+                                <a href="<?php echo BASE_URL; ?>/piloti/modifica/<?php echo $pilota['id']; ?>" class="btn" style="background:#ffc107; color:black; text-decoration:none; padding:5px 10px; font-size:0.9em;">Modifica</a>
+                                <a href="<?php echo BASE_URL; ?>/piloti/elimina/<?php echo $pilota['id']; ?>" class="btn" style="background:#dc3545; text-decoration:none; padding:5px 10px; font-size:0.9em;" onclick="return confirm('Sei sicuro di voler eliminare questo pilota?');">Elimina</a>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>

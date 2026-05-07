@@ -40,15 +40,18 @@
             <table>
                 <thead>
                     <tr>
-                        <th>ID</th>
                         <th>Nome Team</th>
+                        <th>Azioni</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($teams as $team): ?>
                         <tr>
-                            <td><?php echo htmlspecialchars($team['id']); ?></td>
                             <td><?php echo htmlspecialchars($team['nome_team']); ?></td>
+                            <td>
+                                <a href="<?php echo BASE_URL; ?>/teams/modifica/<?php echo $team['id']; ?>" class="btn" style="background:#ffc107; color:black; text-decoration:none; padding:5px 10px; font-size:0.9em;">Modifica</a>
+                                <a href="<?php echo BASE_URL; ?>/teams/elimina/<?php echo $team['id']; ?>" class="btn" style="background:#dc3545; text-decoration:none; padding:5px 10px; font-size:0.9em;" onclick="return confirm('Sei sicuro di voler eliminare questo team?');">Elimina</a>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>

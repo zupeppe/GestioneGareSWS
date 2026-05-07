@@ -46,4 +46,60 @@ class PilotiController {
         header('Location: ' . BASE_URL . '/piloti/index');
         exit;
     }
+
+    /**
+     * Mostra il form di modifica per un pilota specifico pre-popolando i campi.
+     * 
+     * @param int $id L'ID del pilota
+     * @return void
+     */
+    public function modifica($id) {
+        $pilotaModel = new PilotaMioTeam();
+        $pilota = $pilotaModel->ottieniPerId($id);
+        
+        if ($pilota) {
+            require_once BASE_PATH . '/app/Views/piloti/modifica.php';
+        } else {
+            header('Location: ' . BASE_URL . '/piloti/index');
+            exit;
+        }
+    }
+
+    /**
+     * Salva le modifiche di un pilota esistente e reindirizza alla lista.
+     * 
+     * @param int $id L'ID del pilota
+     * @return void
+     */
+    public function aggiorna($id) {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $nome = trim($_POST['nome'] ?? '');
+            $cognome = trim($_POST['cognome'] ?? '');
+
+            if ($nome !== '' && $cognome !== '') {
+                $pilotaModel = new PilotaMioTeam();
+                $pilotaModel->aggiorna($id, [
+                    'nome' => $nome,
+                    'cognome' => $cognome
+                ]);
+            }
+        }
+        
+        header('Location: ' . BASE_URL . '/piloti/index');
+        exit;
+    }
+
+    /**
+     * Elimina un pilota e reindirizza alla lista.
+     * 
+     * @param int $id L'ID del pilota da eliminare
+     * @return void
+     */
+    public function elimina($id) {
+        $pilotaModel = new PilotaMioTeam();
+        $pilotaModel->elimina($id);
+        
+        header('Location: ' . BASE_URL . '/piloti/index');
+        exit;
+    }
 }

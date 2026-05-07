@@ -44,4 +44,58 @@ class TeamsController {
         header('Location: ' . BASE_URL . '/teams/index');
         exit;
     }
+
+    /**
+     * Mostra il form di modifica per un team specifico pre-popolando i campi.
+     * 
+     * @param int $id L'ID del team
+     * @return void
+     */
+    public function modifica($id) {
+        $teamModel = new Team();
+        $team = $teamModel->ottieniPerId($id);
+        
+        if ($team) {
+            require_once BASE_PATH . '/app/Views/teams/modifica.php';
+        } else {
+            header('Location: ' . BASE_URL . '/teams/index');
+            exit;
+        }
+    }
+
+    /**
+     * Salva le modifiche di un team esistente e reindirizza alla lista.
+     * 
+     * @param int $id L'ID del team
+     * @return void
+     */
+    public function aggiorna($id) {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $nome_team = trim($_POST['nome_team'] ?? '');
+
+            if ($nome_team !== '') {
+                $teamModel = new Team();
+                $teamModel->aggiorna($id, [
+                    'nome_team' => $nome_team
+                ]);
+            }
+        }
+        
+        header('Location: ' . BASE_URL . '/teams/index');
+        exit;
+    }
+
+    /**
+     * Elimina un team e reindirizza alla lista.
+     * 
+     * @param int $id L'ID del team da eliminare
+     * @return void
+     */
+    public function elimina($id) {
+        $teamModel = new Team();
+        $teamModel->elimina($id);
+        
+        header('Location: ' . BASE_URL . '/teams/index');
+        exit;
+    }
 }

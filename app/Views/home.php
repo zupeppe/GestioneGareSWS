@@ -27,7 +27,10 @@
             <p>Nessuna gara presente nel database al momento.</p>
         <?php endif; ?>
     </div>
-    
+    <div style="margin-bottom: 20px;">
+    <a href="<?php echo BASE_URL; ?>/piloti/index" class="btn" style="text-decoration:none;">Gestione Piloti</a>
+    <a href="<?php echo BASE_URL; ?>/teams/index" class="btn" style="text-decoration:none;">Gestione Teams</a>
+</div>
     <script src="/GestioneGareSWS/public/js/main.js"></script>
 </body>
 </html>
