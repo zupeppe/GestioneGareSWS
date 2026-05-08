@@ -49,7 +49,7 @@ class IscrittoGara {
      * @return array Array degli iscritti (id iscrizione, numero_gara, nome_team)
      */
     public function ottieniPerGara($gara_id) {
-        $sql = "SELECT i.id, i.numero_gara, t.nome_team 
+        $sql = "SELECT i.id, i.team_id, i.numero_gara, t.nome_team 
                 FROM iscritti_gara i
                 JOIN teams t ON i.team_id = t.id
                 WHERE i.gara_id = :gara_id

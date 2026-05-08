@@ -4,6 +4,9 @@ namespace App\Controllers;
 use App\Models\Gara;
 use App\Models\PilotiGara;
 use App\Models\StintMioTeam;
+use App\Models\IscrittoGara;
+use App\Models\KartGara;
+use App\Models\FilePit;
 use App\Core\TimeHelper;
 
 /**
@@ -130,6 +133,43 @@ class MurettoController {
 
         $strategia = $this->calcolaStrategia($gara, $tuttiStint, $minutiResiduiStrategici);
 
+        // -- LOGICA SPOTTER / KART AVVERSARI --
+        $iscrittoModel = new IscrittoGara();
+        $iscritti = $iscrittoModel->ottieniPerGara($gara_id);
+        usort($iscritti, function($a, $b) {
+            return (int)$a['numero_gara'] <=> (int)$b['numero_gara'];
+        });
+
+        $kartModel = new KartGara();
+        
+        $avversari_kart = [];
+        $nostro_kart = null;
+
+        foreach ($iscritti as $iscritto) {
+            $kartAttuale = $kartModel->ottieniKartAttualeTeam($gara_id, $iscritto['id']);
+            $datiTeam = [
+                'iscritto' => $iscritto,
+                'kart' => $kartAttuale
+            ];
+            $avversari_kart[] = $datiTeam;
+
+            if ($gara['mio_team_id'] !== null && $iscritto['team_id'] == $gara['mio_team_id']) {
+                $nostro_kart = $kartAttuale;
+            }
+        }
+
+        $filePitModel = new FilePit();
+        $file_pit = $filePitModel->ottieniPerGara($gara_id);
+        
+        $kart_in_fila = [];
+        foreach ($file_pit as $fila) {
+            $kartFila = $kartModel->ottieniKartInFila($gara_id, $fila['nome_colore']);
+            $kart_in_fila[$fila['nome_colore']] = [
+                'fila' => $fila,
+                'kart' => $kartFila
+            ];
+        }
+
         require_once BASE_PATH . '/app/Views/muretto/index.php';
     }
 
@@ -226,6 +266,65 @@ class MurettoController {
             exit;
         }
         header('Location: ' . BASE_URL . '/home/index');
+        exit;
+    }
+
+    /**
+     * API Endpoint per ottenere in tempo reale lo stato dei kart di tutti i team.
+     * Restituisce JSON.
+     * 
+     * @param int $gara_id
+     */
+    public function apiStatoKart($gara_id) {
+        $garaModel = new Gara();
+        $gara = $garaModel->ottieniPerId($gara_id);
+        if (!$gara) {
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Gara non trovata']);
+            exit;
+        }
+
+        $iscrittoModel = new IscrittoGara();
+        $iscritti = $iscrittoModel->ottieniPerGara($gara_id);
+        usort($iscritti, function($a, $b) {
+            return (int)$a['numero_gara'] <=> (int)$b['numero_gara'];
+        });
+
+        $kartModel = new KartGara();
+        
+        $avversari_kart = [];
+        $nostro_kart = null;
+
+        foreach ($iscritti as $iscritto) {
+            $kartAttuale = $kartModel->ottieniKartAttualeTeam($gara_id, $iscritto['id']);
+            $avversari_kart[] = [
+                'iscritto' => $iscritto,
+                'kart' => $kartAttuale
+            ];
+
+            if ($gara['mio_team_id'] !== null && $iscritto['team_id'] == $gara['mio_team_id']) {
+                $nostro_kart = $kartAttuale;
+            }
+        }
+
+        $filePitModel = new FilePit();
+        $file_pit = $filePitModel->ottieniPerGara($gara_id);
+        
+        $kart_in_fila = [];
+        foreach ($file_pit as $fila) {
+            $kartFila = $kartModel->ottieniKartInFila($gara_id, $fila['nome_colore']);
+            $kart_in_fila[$fila['nome_colore']] = [
+                'fila' => $fila,
+                'kart' => $kartFila
+            ];
+        }
+
+        header('Content-Type: application/json');
+        echo json_encode([
+            'avversari_kart' => $avversari_kart,
+            'nostro_kart' => $nostro_kart,
+            'kart_in_fila' => $kart_in_fila
+        ]);
         exit;
     }
 }

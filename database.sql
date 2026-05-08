@@ -10,7 +10,9 @@ CREATE TABLE gare (
     tempo_minimo_pit INT DEFAULT 0,
     durata_max_stint INT DEFAULT 0,
     durata_min_stint INT,
-    stato ENUM('setup', 'in_corso', 'finita') DEFAULT 'setup'
+    stato ENUM('setup', 'in_corso', 'finita') DEFAULT 'setup',
+    mio_team_id INT DEFAULT NULL,
+    FOREIGN KEY (mio_team_id) REFERENCES teams(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
 CREATE TABLE piloti_mio_team (

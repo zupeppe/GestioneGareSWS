@@ -1,6 +1,6 @@
 # Schema Database (InnoDB)
 
-- `gare`: id, nome_gara, data_evento, durata_minuti, min_stint, tempo_minimo_pit, durata_max_stint, durata_min_stint, stato (setup, in_corso, finita)
+- `gare`: id, nome_gara, data_evento, durata_minuti, min_stint, tempo_minimo_pit, durata_max_stint, durata_min_stint, stato (setup, in_corso, finita), mio_team_id
 - `piloti_mio_team`: id, nome, cognome
 - `teams`: id, nome_team
 - `iscritti_gara`: id, gara_id, team_id, numero_gara

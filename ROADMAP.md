@@ -16,11 +16,13 @@
 - [x] Logica avvio/fine timer per pilota.
 - [x] Salvataggio in `stint_mio_team`.
 
-## [IN CORSO] Sprint 4: Modulo Spotter Pit (Mobile)
-- [ ] Interfaccia per inserimento rapido cambio kart.
-- [ ] Salvataggio log in `monitoraggio_pit`.
-- [ ] Aggiornamento stato del kart in `kart_gara`.
+## [COMPLETATO] Sprint 4: Modulo Spotter Pit (Mobile)
+- [x] Interfaccia per inserimento rapido cambio kart.
+- [x] Salvataggio log in `monitoraggio_pit`.
+- [x] Aggiornamento stato del kart in `kart_gara`.
+- [x] Logica Undo/Redo e strumenti d'emergenza.
 
-## [DA FARE] Sprint 5: Dashboard Muretto (Desktop)
+## [IN CORSO] Sprint 5: Dashboard Muretto (Desktop)
 - [ ] Chiamate Ajax (Polling) per aggiornamento real-time.
 - [ ] Integrazione dati timer stint + storico kart presi.
+- [ ] Identificazione nostro team nel database.

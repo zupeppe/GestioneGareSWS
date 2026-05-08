@@ -54,6 +54,7 @@ class GareController {
 
         $teamModel = new Team();
         $teams = $teamModel->ottieniNonIscritti($gara_id);
+        $tuttiITeam = $teamModel->ottieniTutti();
 
         $iscrittoModel = new IscrittoGara();
         $iscritti = $iscrittoModel->ottieniPerGara($gara_id);
@@ -83,6 +84,7 @@ class GareController {
             $tempo_minimo_pit = (int)($_POST['tempo_minimo_pit'] ?? 0);
             $durata_max_stint = (int)($_POST['durata_max_stint'] ?? 0);
             $durata_min_stint = isset($_POST['durata_min_stint']) && $_POST['durata_min_stint'] !== '' ? (int)$_POST['durata_min_stint'] : null;
+            $mio_team_id = isset($_POST['mio_team_id']) && $_POST['mio_team_id'] !== '' ? (int)$_POST['mio_team_id'] : null;
 
             if ($gara_id && $nome_gara !== '' && $data_evento !== '') {
                 $garaModel = new Gara();
@@ -93,7 +95,8 @@ class GareController {
                     'min_stint' => $min_stint,
                     'tempo_minimo_pit' => $tempo_minimo_pit,
                     'durata_max_stint' => $durata_max_stint,
-                    'durata_min_stint' => $durata_min_stint
+                    'durata_min_stint' => $durata_min_stint,
+                    'mio_team_id' => $mio_team_id
                 ]);
                 $_SESSION['success'] = "Parametri gara aggiornati con successo.";
             } else {

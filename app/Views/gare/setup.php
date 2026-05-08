@@ -79,6 +79,20 @@
                         <input type="number" id="durata_min_stint" name="durata_min_stint" value="<?php echo htmlspecialchars($gara['durata_min_stint'] ?? ''); ?>" min="0">
                     </div>
                     
+                    <hr style="margin: 20px 0;">
+                    <h3 style="margin-top:0;">Il Nostro Team</h3>
+                    <div class="form-group">
+                        <label for="mio_team_id">Identifica il nostro team (per Spotter/Muretto):</label>
+                        <select id="mio_team_id" name="mio_team_id">
+                            <option value="">-- Nessun team selezionato --</option>
+                            <?php foreach ($tuttiITeam as $t): ?>
+                                <option value="<?php echo $t['id']; ?>" <?php echo (isset($gara['mio_team_id']) && $gara['mio_team_id'] == $t['id']) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($t['nome_team']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
                     <button type="submit" class="btn" style="background:#0056b3;">Salva Parametri</button>
                 </form>
             </div>
