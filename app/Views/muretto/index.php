@@ -37,6 +37,7 @@
         
         @media (max-width: 768px) { .pannello-superiore { grid-template-columns: 1fr; } }
         .riga-allerta { background-color: #f8d7da !important; color: #721c24; border: 2px solid #f5c6cb; }
+        .table-warning { background-color: #fff3cd !important; color: #856404; border: 2px solid #ffeeba; }
     </style>
 </head>
 <body>
@@ -145,6 +146,8 @@
                         $uscitaHHMM = \App\Core\TimeHelper::daMinutiaHHMM($stint['minuto_ingresso'] + $durata_minuti);
                         if ($gara['durata_max_stint'] > 0 && $durata_minuti > $gara['durata_max_stint']) {
                             $alert_class = 'riga-allerta';
+                        } elseif (!empty($gara['durata_min_stint']) && $durata_minuti < $gara['durata_min_stint']) {
+                            $alert_class = 'table-warning';
                         }
                     } else {
                         $durataHHMM = 'In Corso';
@@ -156,9 +159,9 @@
                         <td><strong><?php echo htmlspecialchars($stint['cognome'] . ' ' . $stint['nome']); ?></strong></td>
                         <td>
                             <?php if ($is_primo): ?>
-                                <form action="<?php echo BASE_URL; ?>/muretto/modificaIngressoPrimoStint/<?php echo $gara['id']; ?>" method="POST" style="display:inline-flex; gap:5px; justify-content:center; align-items:center;">
+                                <form action="<?php echo BASE_URL; ?>/muretto/aggiornaPrimoIngresso/<?php echo $gara['id']; ?>" method="POST" style="display:inline-flex; gap:5px; justify-content:center; align-items:center;">
                                     <input type="hidden" name="stint_id" value="<?php echo $stint['id']; ?>">
-                                    <input type="text" name="ingresso" value="<?php echo htmlspecialchars($ingressoHHMM); ?>" required style="width: 80px; padding: 5px; text-align:center;" pattern="[0-9]{2}:[0-9]{2}">
+                                    <input type="text" name="minuto_ingresso_hhmm" value="<?php echo htmlspecialchars($ingressoHHMM); ?>" required style="width: 80px; padding: 5px; text-align:center;" pattern="[0-9]{2}:[0-9]{2}">
                                     <button type="submit" class="btn-piccolo">Applica</button>
                                 </form>
                             <?php else: ?>
@@ -173,8 +176,10 @@
                                     <input type="text" name="durata" value="<?php echo htmlspecialchars($durataHHMM); ?>" required style="width: 80px; padding: 5px; text-align:center;" pattern="[0-9]{2}:[0-9]{2}">
                                     <button type="submit" class="btn-piccolo">Aggiorna</button>
                                 </form>
-                                <?php if($alert_class): ?>
+                                <?php if($alert_class === 'riga-allerta'): ?>
                                     <div style="font-size:0.8em; font-weight:bold; margin-top:4px;">SUPERATO MAX STINT!</div>
+                                <?php elseif($alert_class === 'table-warning'): ?>
+                                    <div style="font-size:0.8em; font-weight:bold; margin-top:4px;">SOTTO MIN STINT!</div>
                                 <?php endif; ?>
                             <?php else: ?>
                                 <span style="color: #856404; font-weight:bold;">In Corso</span>

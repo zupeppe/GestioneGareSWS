@@ -45,10 +45,12 @@ class MurettoController {
         $pit_rimanenti_obbligatori = max(0, $min_stint - $pit_fatti);
 
         // Calcolo Jolly
-        // Formula richiesta: durata_max_stint * (pit_rimanenti_obbligatori + 1)
-        $stint_utile = max(1, $durata_max);
+        // Formula richiesta: (Stint_Rimanenti * (durata_max_stint - 1)) + (Pit_Rimanenti * tempo_minimo_pit)
+        $stint_utile = max(1, $durata_max - 1);
         $stint_rimanenti = $pit_rimanenti_obbligatori + 1;
-        $tempo_massimo_copribile = $stint_rimanenti * $stint_utile;
+        $tempo_minimo_pit = (int)($gara['tempo_minimo_pit'] ?? 0);
+        
+        $tempo_massimo_copribile = ($stint_rimanenti * $stint_utile) + ($pit_rimanenti_obbligatori * $tempo_minimo_pit);
         
         $margine = $tempo_massimo_copribile - $minutiResidui;
         $jolly_disponibili = 0;
@@ -69,6 +71,7 @@ class MurettoController {
             'pit_minimi' => $min_stint,
             'pit_rimanenti_obbligatori' => $pit_rimanenti_obbligatori,
             'tempo_massimo_copribile' => $tempo_massimo_copribile,
+            'margine' => $margine,
             'stato_strategia' => $stato_strategia,
             'colore_strategia' => $colore_strategia,
             'jolly_disponibili' => $jolly_disponibili,
@@ -93,10 +96,10 @@ class MurettoController {
         $stintAttivo = $stintModel->ottieniStintAttivo($gara_id);
         $tuttiStint = $stintModel->ottieniTuttiStintGara($gara_id);
 
+        // Calcoliamo dove siamo arrivati col tempo
         $minutoUltimaUscita = 0;
         foreach ($tuttiStint as $stint) {
             if ($stint['durata_minuti'] !== null) {
-                // Calcoliamo dove siamo arrivati col tempo (ultimo ingresso + ultima durata + pit successivo ipotetico non lo conto qui)
                 $uscita = $stint['minuto_ingresso'] + $stint['durata_minuti'];
                 if ($uscita > $minutoUltimaUscita) {
                     $minutoUltimaUscita = $uscita;
@@ -104,18 +107,28 @@ class MurettoController {
             }
         }
         
-        // Se c'è uno stint attivo, il tempo di gara continua a scorrere ma non sappiamo quando uscirà
-        // Ai fini strategici, il "residuo" si calcola solitamente rispetto al momento attuale.
-        // Se non specificato, lo calcolo semplicemente rispetto all'ultima uscita confermata:
         $minutiResidui = $gara['durata_minuti'] - $minutoUltimaUscita;
         if ($minutiResidui < 0) {
             $minutiResidui = 0;
         }
 
+        // Calcolo tempo residuo strategico
+        $minuto_strategico_partenza = 0;
+        if ($stintAttivo) {
+            $minuto_strategico_partenza = $stintAttivo['minuto_ingresso'];
+        } else {
+            $minuto_strategico_partenza = $minutoUltimaUscita;
+        }
+
+        $minutiResiduiStrategici = $gara['durata_minuti'] - $minuto_strategico_partenza;
+        if ($minutiResiduiStrategici < 0) {
+            $minutiResiduiStrategici = 0;
+        }
+
         require_once dirname(__DIR__) . '/Core/TimeHelper.php';
         $tempoResiduoHHMM = \App\Core\TimeHelper::daMinutiaHHMM($minutiResidui);
 
-        $strategia = $this->calcolaStrategia($gara, $tuttiStint, $minutiResidui);
+        $strategia = $this->calcolaStrategia($gara, $tuttiStint, $minutiResiduiStrategici);
 
         require_once BASE_PATH . '/app/Views/muretto/index.php';
     }
@@ -192,10 +205,10 @@ class MurettoController {
         exit;
     }
 
-    public function modificaIngressoPrimoStint($gara_id) {
+    public function aggiornaPrimoIngresso($gara_id) {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stint_id = $_POST['stint_id'] ?? null;
-            $ingresso = $_POST['ingresso'] ?? null;
+            $ingresso = $_POST['minuto_ingresso_hhmm'] ?? null;
 
             if ($stint_id && $ingresso !== null && $ingresso !== '') {
                 if (!$this->validaFormatoTempo($ingresso)) {
