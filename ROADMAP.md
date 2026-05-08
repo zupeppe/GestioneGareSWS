@@ -12,11 +12,11 @@
 - [x] Interfaccia per iscrivere i team e assegnare i numeri di gara.
 - [x] Evoluzione Setup: Aggiunta gestione `durata_minuti`, roster piloti (`piloti_gara`) e corsie dei box (`file_pit_gara`).
 
-## [DA FARE] Sprint 3: Gestione Stint (Backend)
-- [ ] Logica avvio/fine timer per pilota.
-- [ ] Salvataggio in `stint_mio_team`.
+## [COMPLETATO] Sprint 3: Gestione Stint (Backend)
+- [x] Logica avvio/fine timer per pilota.
+- [x] Salvataggio in `stint_mio_team`.
 
-## [DA FARE] Sprint 4: Modulo Spotter Pit (Mobile)
+## [IN CORSO] Sprint 4: Modulo Spotter Pit (Mobile)
 - [ ] Interfaccia per inserimento rapido cambio kart.
 - [ ] Salvataggio log in `monitoraggio_pit`.
 - [ ] Aggiornamento stato del kart in `kart_gara`.

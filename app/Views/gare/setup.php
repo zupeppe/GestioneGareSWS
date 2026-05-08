@@ -131,9 +131,15 @@
                 <h2>3. Configurazione Box</h2>
                 <form action="<?php echo BASE_URL; ?>/gare/aggiungiFilaPit" method="POST">
                     <input type="hidden" name="gara_id" value="<?php echo $gara['id']; ?>">
-                    <div class="form-group">
-                        <label for="nome_colore">Nome/Colore Fila:</label>
-                        <input type="text" id="nome_colore" name="nome_colore" placeholder="Es. Rossa, Blu..." required>
+                    <div class="form-group" style="display:flex; gap:10px; align-items:flex-end;">
+                        <div style="flex:1;">
+                            <label for="nome_colore">Nome Fila:</label>
+                            <input type="text" id="nome_colore" name="nome_colore" placeholder="Es. Rossa, Blu..." required>
+                        </div>
+                        <div>
+                            <label for="colore_hex">Colore:</label>
+                            <input type="color" id="colore_hex" name="colore_hex" value="#343a40" style="padding:0; height:35px; width:50px; border:1px solid #ccc; border-radius:4px; cursor:pointer;">
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="ordine">Ordine (Opzionale):</label>
@@ -148,7 +154,10 @@
                         <tbody>
                             <?php foreach ($filePit as $fp): ?>
                                 <tr>
-                                    <td><?php echo htmlspecialchars($fp['nome_colore']); ?></td>
+                                    <td>
+                                        <span style="display:inline-block; width:15px; height:15px; background:<?php echo htmlspecialchars($fp['colore_hex']); ?>; border-radius:50%; margin-right:5px; vertical-align:middle; border:1px solid #333;"></span>
+                                        <?php echo htmlspecialchars($fp['nome_colore']); ?>
+                                    </td>
                                     <td><?php echo htmlspecialchars($fp['ordine']); ?></td>
                                     <td>
                                         <a href="<?php echo BASE_URL; ?>/gare/rimuoviFilaPit/<?php echo $fp['id']; ?>/<?php echo $gara['id']; ?>" class="btn btn-danger" style="text-decoration:none; padding:5px 10px; font-size:0.9em; border-radius:4px;" onclick="return confirm('Rimuovere questa fila?');">Rimuovi</a>

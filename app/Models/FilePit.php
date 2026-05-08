@@ -45,11 +45,12 @@ class FilePit {
      * @return bool True se l'inserimento ha avuto successo, False altrimenti
      */
     public function crea($dati) {
-        $sql = "INSERT INTO file_pit_gara (gara_id, nome_colore, ordine) VALUES (:gara_id, :nome_colore, :ordine)";
+        $sql = "INSERT INTO file_pit_gara (gara_id, nome_colore, colore_hex, ordine) VALUES (:gara_id, :nome_colore, :colore_hex, :ordine)";
         $stmt = $this->db->prepare($sql);
         return $stmt->execute([
             ':gara_id' => $dati['gara_id'],
             ':nome_colore' => $dati['nome_colore'],
+            ':colore_hex' => $dati['colore_hex'] ?? '#343a40',
             ':ordine' => $dati['ordine'] ?? 0
         ]);
     }

@@ -115,6 +115,7 @@ class GareController {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $gara_id = $_POST['gara_id'] ?? null;
             $nome_colore = trim($_POST['nome_colore'] ?? '');
+            $colore_hex = trim($_POST['colore_hex'] ?? '#343a40');
             $ordine = (int)($_POST['ordine'] ?? 0);
 
             if ($gara_id && $nome_colore !== '') {
@@ -122,6 +123,7 @@ class GareController {
                 $filePitModel->crea([
                     'gara_id' => $gara_id,
                     'nome_colore' => $nome_colore,
+                    'colore_hex' => $colore_hex,
                     'ordine' => $ordine
                 ]);
                 $_SESSION['success'] = "Fila Pit aggiunta.";

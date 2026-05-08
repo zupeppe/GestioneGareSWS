@@ -64,6 +64,7 @@ CREATE TABLE monitoraggio_pit (
     kart_preso_id INT,
     fila_colore VARCHAR(50),
     timestamp DATETIME NOT NULL,
+    stato ENUM('attivo', 'annullato') DEFAULT 'attivo',
     FOREIGN KEY (gara_id) REFERENCES gare(id) ON DELETE CASCADE,
     FOREIGN KEY (iscritto_gara_id) REFERENCES iscritti_gara(id) ON DELETE CASCADE,
     FOREIGN KEY (kart_lasciato_id) REFERENCES kart_gara(id) ON DELETE SET NULL,
@@ -74,6 +75,7 @@ CREATE TABLE file_pit_gara (
     id INT AUTO_INCREMENT PRIMARY KEY,
     gara_id INT NOT NULL,
     nome_colore VARCHAR(50) NOT NULL,
+    colore_hex VARCHAR(7) DEFAULT '#343a40',
     ordine INT DEFAULT 0,
     FOREIGN KEY (gara_id) REFERENCES gare(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
