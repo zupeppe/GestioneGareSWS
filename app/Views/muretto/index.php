@@ -64,7 +64,7 @@
             <h1><?php echo htmlspecialchars($gara['nome_gara']); ?> - MURETTO BOX</h1>
         </div>
         
-        <div class="pannello-superiore">
+        <div class="pannello-superiore" id="refresh-strategia">
             <div class="dati-globali">
                 <h3 style="margin-top:0;">Dati Generali</h3>
                 <div style="margin-bottom: 5px;">Tempo di Gara Residuo: <strong><?php echo htmlspecialchars($tempoResiduoHHMM); ?></strong></div>
@@ -97,6 +97,7 @@
             </div>
         <?php endif; ?>
 
+        <div id="refresh-pilota-pista">
         <?php if ($stintAttivo): ?>
             <!-- SEZIONE STINT ATTIVO -->
             <div class="box-section box-attivo">
@@ -153,12 +154,13 @@
                 </form>
             </div>
         <?php endif; ?>
+        </div>
 
         <hr style="margin: 40px 0;">
 
         <div style="display: flex; gap: 20px; flex-wrap: wrap;">
             <!-- Colonna 1: Timeline (70%) -->
-            <div style="flex: 2; min-width: 350px;">
+            <div style="flex: 2; min-width: 350px;" id="refresh-storico-stint">
                 <h2>Storico Stint (Timeline a Cascata)</h2>
                 <table>
                     <thead>
@@ -237,7 +239,7 @@
             </div>
 
             <!-- Colonna 2: Radar Avversari (30%) -->
-            <div style="flex: 1; min-width: 250px;">
+            <div style="flex: 1; min-width: 250px;" id="refresh-radar">
                 <h2 style="color: #0056b3;">File Box (Pit Lane)</h2>
                 <div id="file-pit-container" style="display: flex; flex-direction: column; gap: 10px;">
                     <?php foreach ($kart_in_fila as $colore => $dati): ?>
@@ -289,71 +291,39 @@
     </div>
 
     <script>
-        function fetchStatoKart() {
-            fetch('<?php echo BASE_URL; ?>/muretto/apiStatoKart/<?php echo $gara['id']; ?>')
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) return;
-                
-                // Aggiorna radar avversari
-                if (data.avversari_kart) {
-                    data.avversari_kart.forEach(avv => {
-                        const tr = document.getElementById('avv-row-' + avv.iscritto.id);
-                        if (tr) {
-                            const td = tr.querySelector('.avv-rating-cell');
-                            if (td) {
-                                let rating = avv.kart ? avv.kart.rating : 0;
-                                td.innerHTML = getRatingBadgeJS(rating);
-                            }
-                        }
-                    });
-                }
+        function aggiornaSezioneDaHtml(documentoRemoto, sezioneId) {
+            const locale = document.getElementById(sezioneId);
+            const remota = documentoRemoto.getElementById(sezioneId);
+            if (!locale || !remota) {
+                return;
+            }
 
-                // Aggiorna file pit
-                if (data.kart_in_fila) {
-                    for (const colore in data.kart_in_fila) {
-                        const datiFila = data.kart_in_fila[colore];
-                        const divFila = document.getElementById('fila-' + datiFila.fila.id);
-                        if (divFila) {
-                            const cell = divFila.querySelector('.fila-rating-cell');
-                            if (cell) {
-                                if (datiFila.kart) {
-                                    cell.innerHTML = getRatingBadgeJS(datiFila.kart.rating);
-                                } else {
-                                    cell.innerHTML = '<span style="color: #888; font-style: italic;">Vuota</span>';
-                                }
-                            }
-                        }
-                    }
-                }
+            // Non rimpiazziamo la sezione se l'utente sta scrivendo dentro un form/input.
+            const attivo = document.activeElement;
+            if (attivo && locale.contains(attivo)) {
+                return;
+            }
 
-                // Aggiorna nostro kart
-                const nostroContainer = document.getElementById('nostro-kart-container');
-                const nostroBadge = document.getElementById('nostro-kart-badge');
-                
-                if (nostroContainer && nostroBadge) {
-                    if (data.nostro_kart) {
-                        nostroContainer.style.display = 'block';
-                        nostroBadge.innerHTML = getRatingBadgeJS(data.nostro_kart.rating);
-                    } else {
-                        nostroContainer.style.display = 'none';
-                    }
-                }
-            })
-            .catch(err => console.error('Errore polling:', err));
+            locale.innerHTML = remota.innerHTML;
         }
 
-        function getRatingBadgeJS(rating) {
-            let r = parseInt(rating) || 0;
-            let c = 'rating-0'; let t = 'Ignoto';
-            if (r === 1) { c = 'rating-1'; t = 'Scarso'; }
-            else if (r === 2) { c = 'rating-2'; t = 'Medio'; }
-            else if (r === 3) { c = 'rating-3'; t = 'Buono'; }
-            return '<span class="rating-badge ' + c + '">' + t + '</span>';
+        function pollingPaginaMuretto() {
+            fetch(window.location.href)
+                .then(function (response) { return response.text(); })
+                .then(function (html) {
+                    const parser = new DOMParser();
+                    const documentoRemoto = parser.parseFromString(html, 'text/html');
+                    aggiornaSezioneDaHtml(documentoRemoto, 'refresh-strategia');
+                    aggiornaSezioneDaHtml(documentoRemoto, 'refresh-pilota-pista');
+                    aggiornaSezioneDaHtml(documentoRemoto, 'refresh-storico-stint');
+                    aggiornaSezioneDaHtml(documentoRemoto, 'refresh-radar');
+                })
+                .catch(function (errore) {
+                    console.error('Errore polling muretto:', errore);
+                });
         }
 
-        // Esegui il polling ogni 10 secondi
-        setInterval(fetchStatoKart, 10000);
+        setInterval(pollingPaginaMuretto, 5000);
     </script>
 </body>
 </html>

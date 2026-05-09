@@ -108,7 +108,7 @@
             </div>
         </form>
             
-        <div class="fila-buttons">
+        <div class="fila-buttons" id="refresh-stato-box">
             <?php foreach ($statoFile as $sf): 
                 $nome_fila = $sf['fila'];
                 $kart_rating = $sf['kart']['rating'] ?? 0;
@@ -136,28 +136,30 @@
 
         <!-- 3. LISTA TEAM E RATING -->
         <h2 class="section-title">Stato Kart in Pista (Team)</h2>
-        <?php foreach ($statoTeam as $st): ?>
-            <div class="team-row">
-                <div class="team-info">
-                    <span style="color:#666;">N° <?php echo htmlspecialchars($st['iscritto']['numero_gara']); ?></span> 
-                    <?php echo htmlspecialchars($st['iscritto']['nome_team']); ?>
+        <div id="refresh-lista-team">
+            <?php foreach ($statoTeam as $st): ?>
+                <div class="team-row">
+                    <div class="team-info">
+                        <span style="color:#666;">N° <?php echo htmlspecialchars($st['iscritto']['numero_gara']); ?></span> 
+                        <?php echo htmlspecialchars($st['iscritto']['nome_team']); ?>
+                    </div>
+                    <div class="team-rating-form">
+                        <?php echo getRatingBadge($st['kart']['rating'] ?? 0); ?>
+                        <?php if ($st['kart']): ?>
+                            <form action="<?php echo BASE_URL; ?>/spotter/cambiaRating/<?php echo $gara['id']; ?>" method="POST" style="margin:0;">
+                                <input type="hidden" name="kart_id" value="<?php echo $st['kart']['id']; ?>">
+                                <select name="rating" onchange="this.form.submit()">
+                                    <option value="0" <?php echo ($st['kart']['rating']==0)?'selected':''; ?>>Ignoto</option>
+                                    <option value="1" <?php echo ($st['kart']['rating']==1)?'selected':''; ?>>Scarso</option>
+                                    <option value="2" <?php echo ($st['kart']['rating']==2)?'selected':''; ?>>Medio</option>
+                                    <option value="3" <?php echo ($st['kart']['rating']==3)?'selected':''; ?>>Buono</option>
+                                </select>
+                            </form>
+                        <?php endif; ?>
+                    </div>
                 </div>
-                <div class="team-rating-form">
-                    <?php echo getRatingBadge($st['kart']['rating'] ?? 0); ?>
-                    <?php if ($st['kart']): ?>
-                        <form action="<?php echo BASE_URL; ?>/spotter/cambiaRating/<?php echo $gara['id']; ?>" method="POST" style="margin:0;">
-                            <input type="hidden" name="kart_id" value="<?php echo $st['kart']['id']; ?>">
-                            <select name="rating" onchange="this.form.submit()">
-                                <option value="0" <?php echo ($st['kart']['rating']==0)?'selected':''; ?>>Ignoto</option>
-                                <option value="1" <?php echo ($st['kart']['rating']==1)?'selected':''; ?>>Scarso</option>
-                                <option value="2" <?php echo ($st['kart']['rating']==2)?'selected':''; ?>>Medio</option>
-                                <option value="3" <?php echo ($st['kart']['rating']==3)?'selected':''; ?>>Buono</option>
-                            </select>
-                        </form>
-                    <?php endif; ?>
-                </div>
-            </div>
-        <?php endforeach; ?>
+            <?php endforeach; ?>
+        </div>
 
         <!-- 4. STRUMENTI DI EMERGENZA -->
         <h2 class="section-title" style="color: #dc3545; margin-top: 40px;">Strumenti di Emergenza</h2>
@@ -247,6 +249,38 @@
 
         document.getElementById('select-team').addEventListener('change', aggiornaCampoKartLasciato);
         aggiornaCampoKartLasciato();
+
+        function aggiornaSezioneDaHtml(documentoRemoto, sezioneId) {
+            const locale = document.getElementById(sezioneId);
+            const remota = documentoRemoto.getElementById(sezioneId);
+            if (!locale || !remota) {
+                return;
+            }
+
+            // Non rimpiazziamo la sezione se l'utente sta scrivendo dentro un form/input.
+            const attivo = document.activeElement;
+            if (attivo && locale.contains(attivo)) {
+                return;
+            }
+
+            locale.innerHTML = remota.innerHTML;
+        }
+
+        function pollingPaginaSpotter() {
+            fetch(window.location.href)
+                .then(function (response) { return response.text(); })
+                .then(function (html) {
+                    const parser = new DOMParser();
+                    const documentoRemoto = parser.parseFromString(html, 'text/html');
+                    aggiornaSezioneDaHtml(documentoRemoto, 'refresh-stato-box');
+                    aggiornaSezioneDaHtml(documentoRemoto, 'refresh-lista-team');
+                })
+                .catch(function (errore) {
+                    console.error('Errore polling spotter:', errore);
+                });
+        }
+
+        setInterval(pollingPaginaSpotter, 5000);
     </script>
 </body>
 </html>

@@ -22,10 +22,13 @@
         .nav-link { display: inline-block; margin-bottom: 15px; text-decoration: none; color: #0056b3; }
         .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         @media (max-width: 768px) { .grid-container { grid-template-columns: 1fr; } }
+        .autosave-status { font-size: 0.85em; color: #6c757d; margin-top: 8px; min-height: 18px; }
+        .autosave-status.success { color: #198754; }
+        .autosave-status.error { color: #dc3545; }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="container" id="setup-gara-root" data-gara-id="<?php echo (int)$gara['id']; ?>" data-base-url="<?php echo BASE_URL; ?>">
         <a href="<?php echo BASE_URL; ?>/home/index" class="nav-link">&larr; Torna alla Home</a>
         
         <h1>Setup Gara: <?php echo htmlspecialchars($gara['nome_gara']); ?></h1>
@@ -45,7 +48,7 @@
             <!-- SEZIONE 1: Parametri Gara -->
             <div class="form-section">
                 <h2>1. Parametri Gara</h2>
-                <form action="<?php echo BASE_URL; ?>/gare/aggiornaParametri" method="POST">
+                <form action="<?php echo BASE_URL; ?>/gare/aggiornaParametri" method="POST" id="form-parametri-gara">
                     <input type="hidden" name="gara_id" value="<?php echo $gara['id']; ?>">
                     <div class="form-group">
                         <label for="nome_gara">Nome Gara:</label>
@@ -93,14 +96,15 @@
                         </select>
                     </div>
                     
-                    <button type="submit" class="btn" style="background:#0056b3;">Salva Parametri</button>
+                    <button type="button" class="btn" style="background:#0056b3;" id="btn-salva-parametri-manuale">Salvataggio Automatico Attivo</button>
+                    <div class="autosave-status" id="autosave-status">Modifica un campo per salvare automaticamente.</div>
                 </form>
             </div>
 
             <!-- SEZIONE 2: Roster Piloti Team -->
             <div class="form-section">
                 <h2>2. Roster Piloti Team</h2>
-                <form action="<?php echo BASE_URL; ?>/gare/aggiungiPilotaGara" method="POST">
+                <form action="<?php echo BASE_URL; ?>/gare/aggiungiPilotaGara" method="POST" id="form-aggiungi-pilota">
                     <input type="hidden" name="gara_id" value="<?php echo $gara['id']; ?>">
                     <div class="form-group" style="display: flex; align-items: flex-end; gap: 10px;">
                         <div style="flex-grow: 1;">
@@ -121,29 +125,26 @@
                     <button type="submit" class="btn">Aggiungi</button>
                 </form>
 
-                <?php if (!empty($pilotiRoster)): ?>
-                    <table style="margin-top: 10px;">
-                        <thead><tr><th>Pilota</th><th>Azioni</th></tr></thead>
-                        <tbody>
-                            <?php foreach ($pilotiRoster as $pr): ?>
-                                <tr>
-                                    <td><?php echo htmlspecialchars($pr['cognome'] . ' ' . $pr['nome']); ?></td>
-                                    <td>
-                                        <a href="<?php echo BASE_URL; ?>/gare/rimuoviPilotaGara/<?php echo $pr['id']; ?>/<?php echo $gara['id']; ?>" class="btn btn-danger" style="text-decoration:none; padding:5px 10px; font-size:0.9em; border-radius:4px;" onclick="return confirm('Rimuovere dal roster?');">Rimuovi</a>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                <?php else: ?>
-                    <p style="font-size: 0.9em; margin-top: 10px;">Nessun pilota nel roster.</p>
-                <?php endif; ?>
+                <table style="margin-top: 10px; <?php echo empty($pilotiRoster) ? 'display:none;' : ''; ?>" id="tabella-piloti-roster">
+                    <thead><tr><th>Pilota</th><th>Azioni</th></tr></thead>
+                    <tbody id="tbody-piloti-roster">
+                        <?php foreach ($pilotiRoster as $pr): ?>
+                            <tr id="pilota-row-<?php echo (int)$pr['id']; ?>" data-associazione-id="<?php echo (int)$pr['id']; ?>" data-pilota-id="<?php echo (int)$pr['pilota_id']; ?>" data-nome-pilota="<?php echo htmlspecialchars($pr['cognome'] . ' ' . $pr['nome'], ENT_QUOTES, 'UTF-8'); ?>">
+                                <td><?php echo htmlspecialchars($pr['cognome'] . ' ' . $pr['nome']); ?></td>
+                                <td>
+                                    <a href="<?php echo BASE_URL; ?>/gare/rimuoviPilotaGara/<?php echo $pr['id']; ?>/<?php echo $gara['id']; ?>" class="btn btn-danger js-rimuovi-pilota" style="text-decoration:none; padding:5px 10px; font-size:0.9em; border-radius:4px;">Rimuovi</a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                <p style="font-size: 0.9em; margin-top: 10px; <?php echo !empty($pilotiRoster) ? 'display:none;' : ''; ?>" id="empty-piloti-roster">Nessun pilota nel roster.</p>
             </div>
 
             <!-- SEZIONE 3: Configurazione Box -->
             <div class="form-section">
                 <h2>3. Configurazione Box</h2>
-                <form action="<?php echo BASE_URL; ?>/gare/aggiungiFilaPit" method="POST">
+                <form action="<?php echo BASE_URL; ?>/gare/aggiungiFilaPit" method="POST" id="form-aggiungi-fila-pit">
                     <input type="hidden" name="gara_id" value="<?php echo $gara['id']; ?>">
                     <div class="form-group" style="display:flex; gap:10px; align-items:flex-end;">
                         <div style="flex:1;">
@@ -162,33 +163,30 @@
                     <button type="submit" class="btn">Aggiungi Fila</button>
                 </form>
 
-                <?php if (!empty($filePit)): ?>
-                    <table style="margin-top: 10px;">
-                        <thead><tr><th>Fila</th><th>Ordine</th><th>Azioni</th></tr></thead>
-                        <tbody>
-                            <?php foreach ($filePit as $fp): ?>
-                                <tr>
-                                    <td>
-                                        <span style="display:inline-block; width:15px; height:15px; background:<?php echo htmlspecialchars($fp['colore_hex']); ?>; border-radius:50%; margin-right:5px; vertical-align:middle; border:1px solid #333;"></span>
-                                        <?php echo htmlspecialchars($fp['nome_colore']); ?>
-                                    </td>
-                                    <td><?php echo htmlspecialchars($fp['ordine']); ?></td>
-                                    <td>
-                                        <a href="<?php echo BASE_URL; ?>/gare/rimuoviFilaPit/<?php echo $fp['id']; ?>/<?php echo $gara['id']; ?>" class="btn btn-danger" style="text-decoration:none; padding:5px 10px; font-size:0.9em; border-radius:4px;" onclick="return confirm('Rimuovere questa fila?');">Rimuovi</a>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                <?php else: ?>
-                    <p style="font-size: 0.9em; margin-top: 10px;">Nessuna fila configurata.</p>
-                <?php endif; ?>
+                <table style="margin-top: 10px; <?php echo empty($filePit) ? 'display:none;' : ''; ?>" id="tabella-file-pit">
+                    <thead><tr><th>Fila</th><th>Ordine</th><th>Azioni</th></tr></thead>
+                    <tbody id="tbody-file-pit">
+                        <?php foreach ($filePit as $fp): ?>
+                            <tr id="fila-row-<?php echo (int)$fp['id']; ?>" data-fila-id="<?php echo (int)$fp['id']; ?>">
+                                <td>
+                                    <span style="display:inline-block; width:15px; height:15px; background:<?php echo htmlspecialchars($fp['colore_hex']); ?>; border-radius:50%; margin-right:5px; vertical-align:middle; border:1px solid #333;"></span>
+                                    <?php echo htmlspecialchars($fp['nome_colore']); ?>
+                                </td>
+                                <td><?php echo htmlspecialchars($fp['ordine']); ?></td>
+                                <td>
+                                    <a href="<?php echo BASE_URL; ?>/gare/rimuoviFilaPit/<?php echo $fp['id']; ?>/<?php echo $gara['id']; ?>" class="btn btn-danger js-rimuovi-fila" style="text-decoration:none; padding:5px 10px; font-size:0.9em; border-radius:4px;">Rimuovi</a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                <p style="font-size: 0.9em; margin-top: 10px; <?php echo !empty($filePit) ? 'display:none;' : ''; ?>" id="empty-file-pit">Nessuna fila configurata.</p>
             </div>
 
             <!-- SEZIONE 4: Iscrizione Team (Avversari) -->
             <div class="form-section">
                 <h2>4. Iscrizione Team alla Gara</h2>
-                <form action="<?php echo BASE_URL; ?>/gare/iscriviTeam" method="POST">
+                <form action="<?php echo BASE_URL; ?>/gare/iscriviTeam" method="POST" id="form-iscrivi-team">
                     <input type="hidden" name="gara_id" value="<?php echo $gara['id']; ?>">
                     
                     <div class="form-group" style="display: flex; align-items: flex-end; gap: 10px;">
@@ -221,31 +219,28 @@
         <hr>
 
         <h2>Riepilogo Team Iscritti</h2>
-        <?php if (!empty($iscritti)): ?>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Numero Gara</th>
-                        <th>Nome Team</th>
-                        <th>Azioni</th>
+        <table id="tabella-iscritti" style="<?php echo empty($iscritti) ? 'display:none;' : ''; ?>">
+            <thead>
+                <tr>
+                    <th>Numero Gara</th>
+                    <th>Nome Team</th>
+                    <th>Azioni</th>
+                </tr>
+            </thead>
+            <tbody id="tbody-iscritti">
+                <?php foreach ($iscritti as $iscritto): ?>
+                    <tr id="iscrizione-row-<?php echo (int)$iscritto['id']; ?>" data-iscrizione-id="<?php echo (int)$iscritto['id']; ?>" data-team-id="<?php echo (int)$iscritto['team_id']; ?>" data-nome-team="<?php echo htmlspecialchars($iscritto['nome_team'], ENT_QUOTES, 'UTF-8'); ?>" data-numero-gara="<?php echo htmlspecialchars($iscritto['numero_gara'], ENT_QUOTES, 'UTF-8'); ?>">
+                        <td><?php echo htmlspecialchars($iscritto['numero_gara']); ?></td>
+                        <td><?php echo htmlspecialchars($iscritto['nome_team']); ?></td>
+                        <td>
+                            <a href="<?php echo BASE_URL; ?>/gare/modificaIscrizione/<?php echo $iscritto['id']; ?>" class="btn" style="background:#ffc107; color:black; text-decoration:none; padding:5px 10px; font-size:0.9em; border-radius:4px;">Modifica</a>
+                            <a href="<?php echo BASE_URL; ?>/gare/rimuoviIscrizione/<?php echo $iscritto['id']; ?>/<?php echo $gara['id']; ?>" class="btn btn-danger js-rimuovi-iscrizione" style="text-decoration:none; padding:5px 10px; font-size:0.9em; border-radius:4px; color:white;">Rimuovi</a>
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($iscritti as $iscritto): ?>
-                        <tr>
-                            <td><?php echo htmlspecialchars($iscritto['numero_gara']); ?></td>
-                            <td><?php echo htmlspecialchars($iscritto['nome_team']); ?></td>
-                            <td>
-                                <a href="<?php echo BASE_URL; ?>/gare/modificaIscrizione/<?php echo $iscritto['id']; ?>" class="btn" style="background:#ffc107; color:black; text-decoration:none; padding:5px 10px; font-size:0.9em; border-radius:4px;">Modifica</a>
-                                <a href="<?php echo BASE_URL; ?>/gare/rimuoviIscrizione/<?php echo $iscritto['id']; ?>/<?php echo $gara['id']; ?>" class="btn btn-danger" style="text-decoration:none; padding:5px 10px; font-size:0.9em; border-radius:4px; color:white;" onclick="return confirm('Sicuro di voler rimuovere questo team dalla gara?');">Rimuovi</a>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        <?php else: ?>
-            <p>Nessun team ancora iscritto a questa gara.</p>
-        <?php endif; ?>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        <p id="empty-iscritti" style="<?php echo !empty($iscritti) ? 'display:none;' : ''; ?>">Nessun team ancora iscritto a questa gara.</p>
     </div>
 
     <!-- Modale Nuovo Team -->
@@ -282,5 +277,6 @@
             </form>
         </div>
     </div>
+    <script src="<?php echo BASE_URL; ?>/public/js/gare-setup.js"></script>
 </body>
 </html>

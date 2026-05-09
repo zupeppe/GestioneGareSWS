@@ -14,6 +14,29 @@ use App\Models\PilotiGara;
  */
 class GareController {
     /**
+     * Verifica se la richiesta corrente e asincrona (AJAX).
+     *
+     * @return bool
+     */
+    private function eRichiestaAjax() {
+        return isset($_SERVER['HTTP_X_REQUESTED_WITH'])
+            && strtolower((string)$_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+    }
+
+    /**
+     * Restituisce una risposta JSON standardizzata.
+     *
+     * @param int $statusCode Codice HTTP della risposta
+     * @param array $payload Dati da serializzare in JSON
+     * @return void
+     */
+    private function rispondiJson($statusCode, $payload) {
+        http_response_code($statusCode);
+        header('Content-Type: application/json');
+        echo json_encode($payload);
+        exit;
+    }
+    /**
      * Riceve i dati in POST per creare una nuova gara e reindirizza alla home.
      * 
      * @return void
@@ -110,27 +133,102 @@ class GareController {
     }
 
     /**
+     * API JSON per aggiornare i parametri gara senza ricaricare la pagina setup.
+     *
+     * @param int $gara_id ID della gara
+     * @return void
+     */
+    public function apiAggiornaParametri($gara_id) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->rispondiJson(405, ['status' => 'error', 'message' => 'Metodo non consentito.']);
+        }
+
+        $raw = file_get_contents('php://input');
+        $payload = json_decode($raw, true);
+
+        if (!is_array($payload)) {
+            $this->rispondiJson(400, ['status' => 'error', 'message' => 'Payload JSON non valido.']);
+        }
+
+        $nome_gara = trim((string)($payload['nome_gara'] ?? ''));
+        $data_evento = trim((string)($payload['data_evento'] ?? ''));
+        $durata_minuti = (int)($payload['durata_minuti'] ?? 0);
+        $min_stint = (int)($payload['min_stint'] ?? 0);
+        $tempo_minimo_pit = (int)($payload['tempo_minimo_pit'] ?? 0);
+        $durata_max_stint = (int)($payload['durata_max_stint'] ?? 0);
+        $durata_min_stint = isset($payload['durata_min_stint']) && $payload['durata_min_stint'] !== ''
+            ? (int)$payload['durata_min_stint']
+            : null;
+        $mio_team_id = isset($payload['mio_team_id']) && $payload['mio_team_id'] !== ''
+            ? (int)$payload['mio_team_id']
+            : null;
+
+        if ($gara_id <= 0 || $nome_gara === '' || $data_evento === '') {
+            $this->rispondiJson(422, ['status' => 'error', 'message' => 'Campi obbligatori mancanti.']);
+        }
+
+        $garaModel = new Gara();
+        $ok = $garaModel->aggiorna($gara_id, [
+            'nome_gara' => $nome_gara,
+            'data_evento' => $data_evento,
+            'durata_minuti' => $durata_minuti,
+            'min_stint' => $min_stint,
+            'tempo_minimo_pit' => $tempo_minimo_pit,
+            'durata_max_stint' => $durata_max_stint,
+            'durata_min_stint' => $durata_min_stint,
+            'mio_team_id' => $mio_team_id
+        ]);
+
+        if (!$ok) {
+            $this->rispondiJson(500, ['status' => 'error', 'message' => 'Aggiornamento parametri fallito.']);
+        }
+
+        $this->rispondiJson(200, ['status' => 'success']);
+    }
+
+    /**
      * Aggiunge una fila pit (corsia box) alla gara.
      * 
      * @return void
      */
     public function aggiungiFilaPit() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $gara_id = $_POST['gara_id'] ?? null;
+            $gara_id = (int)($_POST['gara_id'] ?? 0);
             $nome_colore = trim($_POST['nome_colore'] ?? '');
             $colore_hex = trim($_POST['colore_hex'] ?? '#343a40');
             $ordine = (int)($_POST['ordine'] ?? 0);
 
-            if ($gara_id && $nome_colore !== '') {
+            if ($gara_id > 0 && $nome_colore !== '') {
                 $filePitModel = new FilePit();
-                $filePitModel->crea([
+                $creato = $filePitModel->crea([
                     'gara_id' => $gara_id,
                     'nome_colore' => $nome_colore,
                     'colore_hex' => $colore_hex,
                     'ordine' => $ordine
                 ]);
+
+                if ($this->eRichiestaAjax()) {
+                    if (!$creato) {
+                        $this->rispondiJson(500, ['status' => 'error', 'message' => 'Impossibile aggiungere la fila pit.']);
+                    }
+                    $fileGara = $filePitModel->ottieniPerGara($gara_id);
+                    $nuovaFila = null;
+                    foreach (array_reverse($fileGara) as $fila) {
+                        if ((string)$fila['nome_colore'] === $nome_colore
+                            && (string)$fila['colore_hex'] === $colore_hex
+                            && (int)$fila['ordine'] === $ordine) {
+                            $nuovaFila = $fila;
+                            break;
+                        }
+                    }
+                    $this->rispondiJson(200, ['status' => 'success', 'data' => $nuovaFila]);
+                }
+
                 $_SESSION['success'] = "Fila Pit aggiunta.";
             } else {
+                if ($this->eRichiestaAjax()) {
+                    $this->rispondiJson(422, ['status' => 'error', 'message' => 'Nome fila richiesto.']);
+                }
                 $_SESSION['error'] = "Nome colore richiesto per aggiungere fila pit.";
             }
             header('Location: ' . BASE_URL . '/gare/setup/' . $gara_id);
@@ -149,7 +247,15 @@ class GareController {
      */
     public function rimuoviFilaPit($id, $gara_id) {
         $filePitModel = new FilePit();
-        $filePitModel->elimina($id);
+        $ok = $filePitModel->elimina($id);
+
+        if ($this->eRichiestaAjax()) {
+            if ($ok) {
+                $this->rispondiJson(200, ['status' => 'success']);
+            }
+            $this->rispondiJson(500, ['status' => 'error', 'message' => 'Impossibile rimuovere la fila pit.']);
+        }
+
         $_SESSION['success'] = "Fila Pit rimossa.";
         header('Location: ' . BASE_URL . '/gare/setup/' . $gara_id);
         exit;
@@ -162,14 +268,33 @@ class GareController {
      */
     public function aggiungiPilotaGara() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $gara_id = $_POST['gara_id'] ?? null;
-            $pilota_id = $_POST['pilota_id'] ?? null;
+            $gara_id = (int)($_POST['gara_id'] ?? 0);
+            $pilota_id = (int)($_POST['pilota_id'] ?? 0);
 
-            if ($gara_id && $pilota_id) {
+            if ($gara_id > 0 && $pilota_id > 0) {
                 $pilotiGaraModel = new PilotiGara();
-                $pilotiGaraModel->crea($gara_id, $pilota_id);
+                $creato = $pilotiGaraModel->crea($gara_id, $pilota_id);
+
+                if ($this->eRichiestaAjax()) {
+                    if (!$creato) {
+                        $this->rispondiJson(500, ['status' => 'error', 'message' => 'Impossibile aggiungere il pilota.']);
+                    }
+                    $roster = $pilotiGaraModel->ottieniPerGara($gara_id);
+                    $nuovoPilota = null;
+                    foreach (array_reverse($roster) as $pilota) {
+                        if ((int)$pilota['pilota_id'] === $pilota_id) {
+                            $nuovoPilota = $pilota;
+                            break;
+                        }
+                    }
+                    $this->rispondiJson(200, ['status' => 'success', 'data' => $nuovoPilota]);
+                }
+
                 $_SESSION['success'] = "Pilota aggiunto al roster della gara.";
             } else {
+                if ($this->eRichiestaAjax()) {
+                    $this->rispondiJson(422, ['status' => 'error', 'message' => 'Pilota non selezionato.']);
+                }
                 $_SESSION['error'] = "Pilota non selezionato.";
             }
             header('Location: ' . BASE_URL . '/gare/setup/' . $gara_id);
@@ -188,7 +313,24 @@ class GareController {
      */
     public function rimuoviPilotaGara($id, $gara_id) {
         $pilotiGaraModel = new PilotiGara();
-        $pilotiGaraModel->elimina($id);
+        $roster = $pilotiGaraModel->ottieniPerGara($gara_id);
+        $recordDaEliminare = null;
+        foreach ($roster as $r) {
+            if ((int)$r['id'] === (int)$id) {
+                $recordDaEliminare = $r;
+                break;
+            }
+        }
+
+        $ok = $pilotiGaraModel->elimina($id);
+
+        if ($this->eRichiestaAjax()) {
+            if ($ok) {
+                $this->rispondiJson(200, ['status' => 'success', 'data' => $recordDaEliminare]);
+            }
+            $this->rispondiJson(500, ['status' => 'error', 'message' => 'Impossibile rimuovere il pilota dal roster.']);
+        }
+
         $_SESSION['success'] = "Pilota rimosso dal roster.";
         header('Location: ' . BASE_URL . '/gare/setup/' . $gara_id);
         exit;
@@ -202,29 +344,54 @@ class GareController {
      */
     public function iscriviTeam() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $gara_id = $_POST['gara_id'] ?? null;
-            $team_id = $_POST['team_id'] ?? null;
+            $gara_id = (int)($_POST['gara_id'] ?? 0);
+            $team_id = (int)($_POST['team_id'] ?? 0);
             $numero_gara = trim($_POST['numero_gara'] ?? '');
 
-            if ($gara_id && $team_id && $numero_gara !== '') {
+            if ($gara_id > 0 && $team_id > 0 && $numero_gara !== '') {
                 $iscrittoModel = new IscrittoGara();
                 
                 // Validazione integrità
                 $errore = $iscrittoModel->esisteGia($gara_id, $team_id, $numero_gara);
                 
                 if ($errore === 'team_esistente') {
+                    if ($this->eRichiestaAjax()) {
+                        $this->rispondiJson(422, ['status' => 'error', 'message' => "Il team selezionato è già iscritto a questa gara."]);
+                    }
                     $_SESSION['error'] = "Il team selezionato è già iscritto a questa gara.";
                 } elseif ($errore === 'numero_esistente') {
+                    if ($this->eRichiestaAjax()) {
+                        $this->rispondiJson(422, ['status' => 'error', 'message' => "Il numero di gara $numero_gara è già stato assegnato a un altro team."]);
+                    }
                     $_SESSION['error'] = "Il numero di gara $numero_gara è già stato assegnato a un altro team.";
                 } else {
-                    $iscrittoModel->crea([
+                    $creato = $iscrittoModel->crea([
                         'gara_id' => $gara_id,
                         'team_id' => $team_id,
                         'numero_gara' => $numero_gara
                     ]);
+
+                    if ($this->eRichiestaAjax()) {
+                        if (!$creato) {
+                            $this->rispondiJson(500, ['status' => 'error', 'message' => 'Impossibile iscrivere il team.']);
+                        }
+                        $iscrittiGara = $iscrittoModel->ottieniPerGara($gara_id);
+                        $nuovaIscrizione = null;
+                        foreach (array_reverse($iscrittiGara) as $iscrizione) {
+                            if ((int)$iscrizione['team_id'] === $team_id && (string)$iscrizione['numero_gara'] === $numero_gara) {
+                                $nuovaIscrizione = $iscrizione;
+                                break;
+                            }
+                        }
+                        $this->rispondiJson(200, ['status' => 'success', 'data' => $nuovaIscrizione]);
+                    }
+
                     $_SESSION['success'] = "Team iscritto con successo!";
                 }
             } else {
+                if ($this->eRichiestaAjax()) {
+                    $this->rispondiJson(422, ['status' => 'error', 'message' => 'Compila tutti i campi obbligatori.']);
+                }
                 $_SESSION['error'] = "Compila tutti i campi obbligatori.";
             }
         }
@@ -243,7 +410,28 @@ class GareController {
      */
     public function rimuoviIscrizione($id, $gara_id) {
         $iscrittoModel = new IscrittoGara();
-        $iscrittoModel->elimina($id);
+        $recordDaEliminare = $iscrittoModel->ottieniPerId($id);
+        $ok = $iscrittoModel->elimina($id);
+
+        if ($this->eRichiestaAjax()) {
+            if ($ok) {
+                $teamModel = new Team();
+                $team = null;
+                if ($recordDaEliminare && isset($recordDaEliminare['team_id'])) {
+                    $team = $teamModel->ottieniPerId($recordDaEliminare['team_id']);
+                }
+                $this->rispondiJson(200, [
+                    'status' => 'success',
+                    'data' => [
+                        'id' => (int)$id,
+                        'team_id' => isset($recordDaEliminare['team_id']) ? (int)$recordDaEliminare['team_id'] : null,
+                        'numero_gara' => $recordDaEliminare['numero_gara'] ?? null,
+                        'nome_team' => $team['nome_team'] ?? null
+                    ]
+                ]);
+            }
+            $this->rispondiJson(500, ['status' => 'error', 'message' => 'Impossibile rimuovere iscrizione.']);
+        }
 
         header('Location: ' . BASE_URL . '/gare/setup/' . $gara_id);
         exit;
