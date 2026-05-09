@@ -8,6 +8,7 @@
 <script src="<?php echo BASE_URL; ?>/public/js/main.js"></script>
 </head>
 <body>
+    <?php require_once __DIR__ . '/layout/navbar.php'; ?>
     <div class="container">
         <h1>Benvenuto in SWS Endurance Manager</h1>
         <p>Dashboard principale per la gestione delle gare endurance.</p>

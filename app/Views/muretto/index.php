@@ -58,9 +58,8 @@
     </style>
 </head>
 <body>
+    <?php require_once dirname(__DIR__) . '/layout/navbar.php'; ?>
     <div class="muretto-container">
-        <a href="<?php echo BASE_URL; ?>/home/index" class="nav-link">&larr; Torna alla Home</a>
-        
         <div class="header-gara">
             <h1><?php echo htmlspecialchars($gara['nome_gara']); ?> - MURETTO BOX</h1>
         </div>

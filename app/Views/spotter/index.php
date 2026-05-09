@@ -62,9 +62,8 @@
     </style>
 </head>
 <body>
+    <?php require_once dirname(__DIR__) . '/layout/navbar.php'; ?>
     <div class="spotter-container">
-        <a href="<?php echo BASE_URL; ?>/home/index" class="nav-link">&larr; Home</a>
-        
         <div class="header">
             <h1>Spotter Pit Lane</h1>
             <div style="font-size: 1.1em; margin-top: 5px;"><?php echo htmlspecialchars($gara['nome_gara']); ?></div>
@@ -83,31 +82,50 @@
 
         <!-- 1. PANNELLO AZIONE -->
         <h2 class="section-title">Azione (Sostituzione Rapida)</h2>
-        <form action="<?php echo BASE_URL; ?>/spotter/registraSostituzione/<?php echo $gara['id']; ?>" method="POST">
-            <select name="iscritto_gara_id" class="select-team" required>
+        <form action="<?php echo BASE_URL; ?>/spotter/registraSostituzione/<?php echo $gara['id']; ?>" method="POST" id="form-sostituzione">
+            <input type="hidden" name="numero_kart_lasciato" id="numero_kart_lasciato" value="">
+            <select name="iscritto_gara_id" id="select-team" class="select-team" required>
                 <option value="">-- Seleziona Team --</option>
-                <?php foreach ($iscritti as $iscritto): ?>
-                    <option value="<?php echo $iscritto['id']; ?>">
+                <?php foreach ($iscritti as $iscritto): 
+                    $ha_kart = false;
+                    foreach($statoTeam as $st) {
+                        if($st['iscritto']['id'] == $iscritto['id'] && $st['kart']) {
+                            $ha_kart = true; break;
+                        }
+                    }
+                ?>
+                    <option value="<?php echo $iscritto['id']; ?>" data-ha-kart="<?php echo $ha_kart ? '1' : '0'; ?>">
                         N° <?php echo htmlspecialchars($iscritto['numero_gara']); ?> - <?php echo htmlspecialchars($iscritto['nome_team']); ?>
                     </option>
                 <?php endforeach; ?>
             </select>
+        </form>
             
-            <div class="fila-buttons">
-                <?php foreach ($statoFile as $sf): 
-                    $nome_fila = $sf['fila'];
-                    $kart_rating = $sf['kart']['rating'] ?? 0;
-                    $colore_hex = htmlspecialchars($sf['colore_hex'] ?? '#343a40');
-                ?>
-                    <button type="submit" name="fila_nome" value="<?php echo htmlspecialchars($nome_fila); ?>" class="btn-fila" style="background-color: <?php echo $colore_hex; ?>;">
+        <div class="fila-buttons">
+            <?php foreach ($statoFile as $sf): 
+                $nome_fila = $sf['fila'];
+                $kart_rating = $sf['kart']['rating'] ?? 0;
+                $colore_hex = htmlspecialchars($sf['colore_hex'] ?? '#343a40');
+            ?>
+                <?php if ($sf['kart']): ?>
+                    <button type="button" class="btn-fila" style="background-color: <?php echo $colore_hex; ?>;" onclick="inviaSostituzione('<?php echo htmlspecialchars($nome_fila); ?>');">
                         <div>Fila <?php echo htmlspecialchars($nome_fila); ?></div>
                         <div style="font-size: 0.9em; margin-top: 12px; opacity: 1; text-transform: none; text-shadow: none;">
                             Kart: <?php echo getRatingBadge($kart_rating); ?>
                         </div>
                     </button>
-                <?php endforeach; ?>
-            </div>
-        </form>
+                <?php else: ?>
+                    <div style="flex: 1; min-width: 140px; padding: 15px; border: 2px dashed <?php echo $colore_hex; ?>; border-radius: 10px; text-align: center; background: white;">
+                        <div style="font-weight: bold; color: <?php echo $colore_hex; ?>; margin-bottom: 10px;">Fila <?php echo htmlspecialchars($nome_fila); ?> Vuota</div>
+                        <form action="<?php echo BASE_URL; ?>/spotter/inizializzaFila/<?php echo $gara['id']; ?>" method="POST" style="display:flex; flex-direction:column; gap:5px;">
+                            <input type="hidden" name="fila_nome" value="<?php echo htmlspecialchars($nome_fila); ?>">
+                            <input type="number" name="numero_kart" placeholder="N° Kart" required style="padding:8px; width:100%; box-sizing:border-box; font-size:1.1em; border:1px solid #ccc; border-radius:4px;">
+                            <button type="submit" style="padding:10px; background:<?php echo $colore_hex; ?>; color:white; border:none; border-radius:4px; font-weight:bold; font-size:1em; cursor:pointer;">Inizializza</button>
+                        </form>
+                    </div>
+                <?php endif; ?>
+            <?php endforeach; ?>
+        </div>
 
         <!-- 3. LISTA TEAM E RATING -->
         <h2 class="section-title">Stato Kart in Pista (Team)</h2>
@@ -173,5 +191,39 @@
         </div>
 
     </div>
+
+    <script>
+        function inviaSostituzione(filaNome) {
+            const form = document.getElementById('form-sostituzione');
+            const select = document.getElementById('select-team');
+            
+            if(!select.value) {
+                alert("Seleziona un Team prima di cliccare sulla Fila.");
+                return;
+            }
+
+            const option = select.options[select.selectedIndex];
+            const haKart = option.getAttribute('data-ha-kart') === '1';
+
+            if (!haKart) {
+                const numKart = prompt("Questo team non ha un kart assegnato. Inserisci il NUMERO DEL KART che sta lasciando ai box:");
+                if (numKart) {
+                    document.getElementById('numero_kart_lasciato').value = numKart;
+                } else {
+                    alert("Operazione annullata.");
+                    return;
+                }
+            }
+
+            // Aggiungiamo il campo fila_nome
+            const inputFila = document.createElement('input');
+            inputFila.type = 'hidden';
+            inputFila.name = 'fila_nome';
+            inputFila.value = filaNome;
+            form.appendChild(inputFila);
+            
+            form.submit();
+        }
+    </script>
 </body>
 </html>

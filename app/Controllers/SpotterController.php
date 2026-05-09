@@ -67,6 +67,29 @@ class SpotterController {
     }
 
     /**
+     * Inizializza una fila vuota con un kart.
+     */
+    public function inizializzaFila($gara_id) {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $fila_nome = $_POST['fila_nome'] ?? null;
+            $numero_kart = $_POST['numero_kart'] ?? null;
+
+            if ($fila_nome && $numero_kart) {
+                $kartModel = new KartGara();
+                $kart_id = $kartModel->trovaOCrea($gara_id, $numero_kart);
+                $kartModel->impostaFila($kart_id, $fila_nome);
+                $_SESSION['success'] = "Fila {$fila_nome} inizializzata con il kart {$numero_kart}.";
+            } else {
+                $_SESSION['error'] = "Numero kart mancante.";
+            }
+            header('Location: ' . BASE_URL . '/spotter/index/' . $gara_id);
+            exit;
+        }
+        header('Location: ' . BASE_URL . '/home/index');
+        exit;
+    }
+
+    /**
      * Esegue lo scambio logico dei kart tra team e fila.
      */
     public function registraSostituzione($gara_id) {
@@ -79,6 +102,15 @@ class SpotterController {
                 
                 // 1. Trova il kart che il team sta lasciando (quello in pista col team)
                 $kart_lasciato = $kartModel->ottieniKartAttualeTeam($gara_id, $iscritto_gara_id);
+                
+                if (!$kart_lasciato) {
+                    $numero_kart_lasciato = $_POST['numero_kart_lasciato'] ?? null;
+                    if ($numero_kart_lasciato) {
+                        $kart_lasciato_id = $kartModel->trovaOCrea($gara_id, $numero_kart_lasciato);
+                        $kart_lasciato = $kartModel->ottieniPerId($kart_lasciato_id);
+                    }
+                }
+
                 // 2. Trova il kart fermo nella fila
                 $kart_preso = $kartModel->ottieniKartInFila($gara_id, $fila_nome);
 

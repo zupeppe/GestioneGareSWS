@@ -24,16 +24,16 @@ class KartGara {
      * @param string $numero_kart Numero identificativo del kart
      * @return int L'ID del kart in gara
      */
-    public function trovaOCrea($gara_id, $numero_kart) {
+    public function trovaOCrea($gara_id, $numero_kart, $rating = 0) {
         $sql = "SELECT id FROM kart_gara WHERE gara_id = :gara_id AND numero_kart = :numero_kart LIMIT 1";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':gara_id' => $gara_id, ':numero_kart' => $numero_kart]);
         $risultato = $stmt->fetch();
         if ($risultato) return (int)$risultato['id'];
 
-        $sqlInsert = "INSERT INTO kart_gara (gara_id, numero_kart, rating) VALUES (:gara_id, :numero_kart, 0)";
+        $sqlInsert = "INSERT INTO kart_gara (gara_id, numero_kart, rating) VALUES (:gara_id, :numero_kart, :rating)";
         $stmtInsert = $this->db->prepare($sqlInsert);
-        $stmtInsert->execute([':gara_id' => $gara_id, ':numero_kart' => $numero_kart]);
+        $stmtInsert->execute([':gara_id' => $gara_id, ':numero_kart' => $numero_kart, ':rating' => $rating]);
         return (int)$this->db->lastInsertId();
     }
 
@@ -180,5 +180,24 @@ class KartGara {
             $this->db->rollBack();
             return false;
         }
+    }
+
+    /**
+     * Recupera un kart per ID.
+     */
+    public function ottieniPerId($id) {
+        $sql = "SELECT * FROM kart_gara WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':id' => $id]);
+        return $stmt->fetch();
+    }
+
+    /**
+     * Imposta direttamente la fila per un kart (es. per inizializzazione).
+     */
+    public function impostaFila($kart_id, $fila_nome) {
+        $sql = "UPDATE kart_gara SET ultima_fila = :fila WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([':fila' => $fila_nome, ':id' => $kart_id]);
     }
 }
