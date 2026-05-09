@@ -68,19 +68,22 @@ class SpotterController {
 
     /**
      * Inizializza una fila vuota con un kart.
+     *
+     * @param int $gara_id ID della gara
+     * @return void
      */
     public function inizializzaFila($gara_id) {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $fila_nome = $_POST['fila_nome'] ?? null;
-            $numero_kart = $_POST['numero_kart'] ?? null;
+            $fila_nome = trim((string)($_POST['fila_nome'] ?? ''));
+            $numero_kart = (int)($_POST['numero_kart'] ?? 0);
 
-            if ($fila_nome && $numero_kart) {
+            if ($fila_nome !== '' && $numero_kart > 0) {
                 $kartModel = new KartGara();
                 $kart_id = $kartModel->trovaOCrea($gara_id, $numero_kart);
                 $kartModel->impostaFila($kart_id, $fila_nome);
                 $_SESSION['success'] = "Fila {$fila_nome} inizializzata con il kart {$numero_kart}.";
             } else {
-                $_SESSION['error'] = "Numero kart mancante.";
+                $_SESSION['error'] = "Dati non validi per inizializzare la fila.";
             }
             header('Location: ' . BASE_URL . '/spotter/index/' . $gara_id);
             exit;
@@ -94,20 +97,24 @@ class SpotterController {
      */
     public function registraSostituzione($gara_id) {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $iscritto_gara_id = $_POST['iscritto_gara_id'] ?? null;
-            $fila_nome = $_POST['fila_nome'] ?? null;
+            $iscritto_gara_id = (int)($_POST['iscritto_gara_id'] ?? 0);
+            $fila_nome = trim((string)($_POST['fila_nome'] ?? ''));
 
-            if ($iscritto_gara_id && $fila_nome) {
+            if ($iscritto_gara_id > 0 && $fila_nome !== '') {
                 $kartModel = new KartGara();
                 
                 // 1. Trova il kart che il team sta lasciando (quello in pista col team)
                 $kart_lasciato = $kartModel->ottieniKartAttualeTeam($gara_id, $iscritto_gara_id);
                 
                 if (!$kart_lasciato) {
-                    $numero_kart_lasciato = $_POST['numero_kart_lasciato'] ?? null;
-                    if ($numero_kart_lasciato) {
+                    $numero_kart_lasciato = (int)($_POST['numero_kart_lasciato'] ?? 0);
+                    if ($numero_kart_lasciato > 0) {
                         $kart_lasciato_id = $kartModel->trovaOCrea($gara_id, $numero_kart_lasciato);
                         $kart_lasciato = $kartModel->ottieniPerId($kart_lasciato_id);
+                    } else {
+                        $_SESSION['error'] = "Il team selezionato non ha un kart precedente. Inserisci il numero del kart lasciato.";
+                        header('Location: ' . BASE_URL . '/spotter/index/' . $gara_id);
+                        exit;
                     }
                 }
 

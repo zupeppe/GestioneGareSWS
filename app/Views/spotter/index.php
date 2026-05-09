@@ -34,6 +34,8 @@
         .team-info { font-size: 1.2em; font-weight: bold; flex: 1; min-width: 200px; }
         .team-rating-form { display: flex; gap: 10px; align-items: center; margin-top: 5px; }
         .team-rating-form select { padding: 10px; font-size: 1em; border-radius: 4px; border: 1px solid #ccc; background: white; }
+        .numero-kart-lasciato-wrap { margin-top: 10px; display: none; }
+        .numero-kart-lasciato-wrap input { width: 100%; padding: 12px; font-size: 1.1em; border: 2px solid #dc3545; border-radius: 8px; box-sizing: border-box; }
         
         .nav-link { display: inline-block; margin-bottom: 15px; font-size: 1.2em; text-decoration: none; color: #0056b3; font-weight: bold; }
         
@@ -83,7 +85,6 @@
         <!-- 1. PANNELLO AZIONE -->
         <h2 class="section-title">Azione (Sostituzione Rapida)</h2>
         <form action="<?php echo BASE_URL; ?>/spotter/registraSostituzione/<?php echo $gara['id']; ?>" method="POST" id="form-sostituzione">
-            <input type="hidden" name="numero_kart_lasciato" id="numero_kart_lasciato" value="">
             <select name="iscritto_gara_id" id="select-team" class="select-team" required>
                 <option value="">-- Seleziona Team --</option>
                 <?php foreach ($iscritti as $iscritto): 
@@ -99,6 +100,12 @@
                     </option>
                 <?php endforeach; ?>
             </select>
+            <div class="numero-kart-lasciato-wrap" id="numero-kart-lasciato-wrap">
+                <label for="numero_kart_lasciato" style="display:block; margin-bottom:5px; font-weight:bold; color:#721c24;">
+                    Team senza kart precedente: inserisci il numero kart lasciato
+                </label>
+                <input type="text" name="numero_kart_lasciato" id="numero_kart_lasciato" value="" placeholder="Es. 27" inputmode="numeric">
+            </div>
         </form>
             
         <div class="fila-buttons">
@@ -120,7 +127,7 @@
                         <form action="<?php echo BASE_URL; ?>/spotter/inizializzaFila/<?php echo $gara['id']; ?>" method="POST" style="display:flex; flex-direction:column; gap:5px;">
                             <input type="hidden" name="fila_nome" value="<?php echo htmlspecialchars($nome_fila); ?>">
                             <input type="number" name="numero_kart" placeholder="N° Kart" required style="padding:8px; width:100%; box-sizing:border-box; font-size:1.1em; border:1px solid #ccc; border-radius:4px;">
-                            <button type="submit" style="padding:10px; background:<?php echo $colore_hex; ?>; color:white; border:none; border-radius:4px; font-weight:bold; font-size:1em; cursor:pointer;">Inizializza</button>
+                            <button type="submit" style="padding:10px; background:<?php echo $colore_hex; ?>; color:white; border:none; border-radius:4px; font-weight:bold; font-size:1em; cursor:pointer;">Inizializza Fila</button>
                         </form>
                     </div>
                 <?php endif; ?>
@@ -196,6 +203,7 @@
         function inviaSostituzione(filaNome) {
             const form = document.getElementById('form-sostituzione');
             const select = document.getElementById('select-team');
+            const inputKartLasciato = document.getElementById('numero_kart_lasciato');
             
             if(!select.value) {
                 alert("Seleziona un Team prima di cliccare sulla Fila.");
@@ -204,15 +212,10 @@
 
             const option = select.options[select.selectedIndex];
             const haKart = option.getAttribute('data-ha-kart') === '1';
-
-            if (!haKart) {
-                const numKart = prompt("Questo team non ha un kart assegnato. Inserisci il NUMERO DEL KART che sta lasciando ai box:");
-                if (numKart) {
-                    document.getElementById('numero_kart_lasciato').value = numKart;
-                } else {
-                    alert("Operazione annullata.");
-                    return;
-                }
+            if (!haKart && !inputKartLasciato.value.trim()) {
+                alert("Inserisci il numero del kart lasciato per il team selezionato.");
+                inputKartLasciato.focus();
+                return;
             }
 
             // Aggiungiamo il campo fila_nome
@@ -224,6 +227,26 @@
             
             form.submit();
         }
+
+        function aggiornaCampoKartLasciato() {
+            const select = document.getElementById('select-team');
+            const wrap = document.getElementById('numero-kart-lasciato-wrap');
+            const input = document.getElementById('numero_kart_lasciato');
+            const option = select.options[select.selectedIndex];
+            const haKart = option && option.getAttribute('data-ha-kart') === '1';
+
+            if (select.value && !haKart) {
+                wrap.style.display = 'block';
+                input.required = true;
+            } else {
+                wrap.style.display = 'none';
+                input.required = false;
+                input.value = '';
+            }
+        }
+
+        document.getElementById('select-team').addEventListener('change', aggiornaCampoKartLasciato);
+        aggiornaCampoKartLasciato();
     </script>
 </body>
 </html>

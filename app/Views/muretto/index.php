@@ -125,6 +125,13 @@
                     <label for="durata" style="font-size: 1.2em; font-weight:bold;">Tempo in Pista (HH:MM):</label>
                     <input type="text" id="durata" name="durata" required style="width: 150px;" placeholder="Es. 01:15" pattern="[0-9]{2}:[0-9]{2}">
                     <button type="submit" class="btn-enorme btn-rosso">TERMINA STINT</button>
+                    <a
+                        href="<?php echo BASE_URL; ?>/muretto/annullaStintAttivo/<?php echo $gara['id']; ?>/<?php echo $stintAttivo['id']; ?>"
+                        style="display:inline-block; font-size:1em; padding:10px 15px; background:#6c757d; color:white; text-decoration:none; border-radius:5px; font-weight:bold;"
+                        onclick="return confirm('Sicuro di voler annullare questo stint?');"
+                    >
+                        Annulla Inserimento
+                    </a>
                 </form>
             </div>
         <?php else: ?>

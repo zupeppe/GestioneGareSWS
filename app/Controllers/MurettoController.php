@@ -221,6 +221,34 @@ class MurettoController {
         exit;
     }
 
+    /**
+     * Annulla lo stint attivo eliminando l'inserimento appena effettuato.
+     *
+     * @param int $gara_id ID della gara
+     * @param int $stint_id ID dello stint da annullare
+     * @return void
+     */
+    public function annullaStintAttivo($gara_id, $stint_id) {
+        $stint_id = (int)$stint_id;
+        if ($stint_id <= 0) {
+            $_SESSION['error'] = "Stint non valido.";
+            header('Location: ' . BASE_URL . '/muretto/index/' . $gara_id);
+            exit;
+        }
+
+        $stintModel = new StintMioTeam();
+        $eliminato = $stintModel->eliminaStintAttivo($gara_id, $stint_id);
+
+        if ($eliminato) {
+            $_SESSION['success'] = "Inserimento stint annullato con successo.";
+        } else {
+            $_SESSION['error'] = "Impossibile annullare lo stint (potrebbe non essere piu attivo).";
+        }
+
+        header('Location: ' . BASE_URL . '/muretto/index/' . $gara_id);
+        exit;
+    }
+
     public function modificaDurata($gara_id) {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stint_id = $_POST['stint_id'] ?? null;

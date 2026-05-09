@@ -212,4 +212,20 @@ class StintMioTeam {
         $stmt->execute([':gara_id' => $gara_id]);
         return $stmt->fetchAll();
     }
+
+    /**
+     * Elimina in modo sicuro uno stint attivo specifico.
+     *
+     * @param int $gara_id ID della gara
+     * @param int $stint_id ID dello stint da eliminare
+     * @return bool
+     */
+    public function eliminaStintAttivo($gara_id, $stint_id) {
+        $sql = "DELETE FROM stint_mio_team WHERE id = :stint_id AND gara_id = :gara_id AND durata_minuti IS NULL";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([
+            ':stint_id' => $stint_id,
+            ':gara_id' => $gara_id
+        ]);
+    }
 }

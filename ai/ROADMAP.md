@@ -26,3 +26,8 @@
 - [ ] Chiamate Ajax (Polling) per aggiornamento real-time.
 - [ ] Integrazione dati timer stint + storico kart presi.
 - [ ] Identificazione nostro team nel database.
+
+## [COMPLETATO] Sprint 5.1: Rifiniture e Bugfix
+- [x] Bug del Minuto Zero (Spotter): inizializzazione fila vuota e gestione team con "Nessun Kart".
+- [x] Navigazione Globale (UX): navbar condivisa su Home, Muretto e Spotter.
+- [x] Annulla Stint (Muretto): annullamento sicuro dello stint attivo con conferma utente.
