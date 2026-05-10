@@ -122,7 +122,7 @@
                             <button type="button" class="btn btn-secondary" onclick="openModal('modal-nuovo-pilota')" style="background:#6c757d; height: 35px; line-height: 15px;">+ Nuovo</button>
                         </div>
                     </div>
-                    <button type="submit" class="btn">Aggiungi</button>
+                    <button type="button" class="btn" id="btn-aggiungi-roster-pilota">Aggiungi pilota</button>
                 </form>
 
                 <table style="margin-top: 10px; <?php echo empty($pilotiRoster) ? 'display:none;' : ''; ?>" id="tabella-piloti-roster">
@@ -160,7 +160,7 @@
                         <label for="ordine">Ordine (Opzionale):</label>
                         <input type="number" id="ordine" name="ordine" value="0">
                     </div>
-                    <button type="submit" class="btn">Aggiungi Fila</button>
+                    <button type="button" class="btn" id="btn-aggiungi-fila-pit">Aggiungi fila</button>
                 </form>
 
                 <table style="margin-top: 10px; <?php echo empty($filePit) ? 'display:none;' : ''; ?>" id="tabella-file-pit">
@@ -169,8 +169,11 @@
                         <?php foreach ($filePit as $fp): ?>
                             <tr id="fila-row-<?php echo (int)$fp['id']; ?>" data-fila-id="<?php echo (int)$fp['id']; ?>">
                                 <td>
-                                    <span style="display:inline-block; width:15px; height:15px; background:<?php echo htmlspecialchars($fp['colore_hex']); ?>; border-radius:50%; margin-right:5px; vertical-align:middle; border:1px solid #333;"></span>
-                                    <?php echo htmlspecialchars($fp['nome_colore']); ?>
+                                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                        <span class="js-fila-anteprima-colore" style="display:inline-block; width:15px; height:15px; background:<?php echo htmlspecialchars($fp['colore_hex']); ?>; border-radius:50%; vertical-align:middle; border:1px solid #333;"></span>
+                                        <input type="text" class="js-fila-nome-input" value="<?php echo htmlspecialchars($fp['nome_colore']); ?>" maxlength="120" style="padding:6px 8px; flex:1; min-width:100px; max-width:220px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box;">
+                                        <input type="color" class="js-fila-colore-input" value="<?php echo htmlspecialchars($fp['colore_hex']); ?>" title="Colore fila" aria-label="Colore fila" style="padding:0; height:32px; width:44px; border:1px solid #ccc; border-radius:4px; cursor:pointer;">
+                                    </div>
                                 </td>
                                 <td><?php echo htmlspecialchars($fp['ordine']); ?></td>
                                 <td>
@@ -211,7 +214,7 @@
                         <input type="number" id="numero_gara" name="numero_gara" required>
                     </div>
                     
-                    <button type="submit" class="btn">Aggiungi Iscrizione</button>
+                    <button type="button" class="btn" id="btn-aggiungi-iscrizione-team">Aggiungi iscrizione</button>
                 </form>
             </div>
         </div>
@@ -248,13 +251,13 @@
         <div class="modal-content">
             <span class="close" onclick="closeModal('modal-nuovo-team')">&times;</span>
             <h2>Nuovo Team Rapido</h2>
-            <form action="<?php echo BASE_URL; ?>/teams/store" method="POST">
+            <form action="<?php echo BASE_URL; ?>/teams/store" method="POST" id="form-modal-nuovo-team">
                 <input type="hidden" name="redirect_to" value="/gare/setup/<?php echo $gara['id']; ?>">
                 <div class="form-group">
                     <label for="nome_team_modale">Nome Team:</label>
                     <input type="text" id="nome_team_modale" name="nome_team" required style="width: 100%; box-sizing: border-box;">
                 </div>
-                <button type="submit" class="btn">Crea Team e Torna al Setup</button>
+                <button type="button" class="btn" id="btn-modal-salva-team">Crea team</button>
             </form>
         </div>
     </div>
@@ -263,7 +266,7 @@
         <div class="modal-content">
             <span class="close" onclick="closeModal('modal-nuovo-pilota')">&times;</span>
             <h2>Nuovo Pilota Rapido</h2>
-            <form action="<?php echo BASE_URL; ?>/piloti/store" method="POST">
+            <form action="<?php echo BASE_URL; ?>/piloti/store" method="POST" id="form-modal-nuovo-pilota">
                 <input type="hidden" name="redirect_to" value="/gare/setup/<?php echo $gara['id']; ?>">
                 <div class="form-group">
                     <label for="nome_pilota_modale">Nome:</label>
@@ -273,7 +276,7 @@
                     <label for="cognome_pilota_modale">Cognome:</label>
                     <input type="text" id="cognome_pilota_modale" name="cognome" required style="width: 100%; box-sizing: border-box;">
                 </div>
-                <button type="submit" class="btn">Crea Pilota e Torna al Setup</button>
+                <button type="button" class="btn" id="btn-modal-salva-pilota">Crea pilota</button>
             </form>
         </div>
     </div>

@@ -30,16 +30,40 @@ class PilotiController {
      */
     public function store() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $ajax = isset($_SERVER['HTTP_X_REQUESTED_WITH'])
+                && strtolower((string)$_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
             $nome = trim($_POST['nome'] ?? '');
             $cognome = trim($_POST['cognome'] ?? '');
             $redirect_to = $_POST['redirect_to'] ?? '/piloti/index';
 
             if ($nome !== '' && $cognome !== '') {
                 $pilotaModel = new PilotaMioTeam();
-                $pilotaModel->crea([
+                $creato = $pilotaModel->crea([
                     'nome' => $nome,
                     'cognome' => $cognome
                 ]);
+                if ($ajax) {
+                    header('Content-Type: application/json');
+                    if (!$creato) {
+                        http_response_code(500);
+                        echo json_encode(['status' => 'error', 'message' => 'Creazione pilota fallita.']);
+                        exit;
+                    }
+                    echo json_encode([
+                        'status' => 'success',
+                        'data' => [
+                            'id' => $pilotaModel->ottieniUltimoIdInserito(),
+                            'nome' => $nome,
+                            'cognome' => $cognome
+                        ]
+                    ]);
+                    exit;
+                }
+            } elseif ($ajax) {
+                header('Content-Type: application/json');
+                http_response_code(422);
+                echo json_encode(['status' => 'error', 'message' => 'Nome e cognome obbligatori.']);
+                exit;
             }
             
             // Pattern Post-Redirect-Get

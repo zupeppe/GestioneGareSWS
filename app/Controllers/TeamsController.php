@@ -30,14 +30,37 @@ class TeamsController {
      */
     public function store() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $ajax = isset($_SERVER['HTTP_X_REQUESTED_WITH'])
+                && strtolower((string)$_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
             $nome_team = trim($_POST['nome_team'] ?? '');
             $redirect_to = $_POST['redirect_to'] ?? '';
 
             if ($nome_team !== '') {
                 $teamModel = new Team();
-                $teamModel->crea([
+                $creato = $teamModel->crea([
                     'nome_team' => $nome_team
                 ]);
+                if ($ajax) {
+                    header('Content-Type: application/json');
+                    if (!$creato) {
+                        http_response_code(500);
+                        echo json_encode(['status' => 'error', 'message' => 'Creazione team fallita.']);
+                        exit;
+                    }
+                    echo json_encode([
+                        'status' => 'success',
+                        'data' => [
+                            'id' => $teamModel->ottieniUltimoIdInserito(),
+                            'nome_team' => $nome_team
+                        ]
+                    ]);
+                    exit;
+                }
+            } elseif ($ajax) {
+                header('Content-Type: application/json');
+                http_response_code(422);
+                echo json_encode(['status' => 'error', 'message' => 'Nome team obbligatorio.']);
+                exit;
             }
 
             if ($redirect_to !== '') {

@@ -28,6 +28,120 @@
             .replace(/'/g, '&#039;');
     }
 
+    /**
+     * Evita il reload della pagina se viene inviato il form (es. tasto Invio).
+     *
+     * @param {HTMLFormElement|null} form
+     */
+    function bloccaSubmitReload(form) {
+        if (!form) {
+            return;
+        }
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+        });
+    }
+
+    /**
+     * Normalizza un colore hex per attributi HTML/CSS (solo #RRGGBB).
+     *
+     * @param {string} val
+     * @returns {string}
+     */
+    function sanitizzaHexColore(val) {
+        const s = String(val || '').trim();
+        return /^#[0-9A-Fa-f]{6}$/.test(s) ? s : '#343a40';
+    }
+
+    /**
+     * Costruisce le celle della tabella file pit con nome/colore modificabili.
+     *
+     * @param {object} fila
+     * @returns {string}
+     */
+    function htmlCelleFilaEditable(fila) {
+        const nome = escapeHtml(fila.nome_colore || '');
+        const hexSafe = sanitizzaHexColore(fila.colore_hex);
+        const idNum = Number(fila.id);
+        const ordine = escapeHtml(String(fila.ordine ?? ''));
+        return `
+            <td>
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <span class="js-fila-anteprima-colore" style="display:inline-block; width:15px; height:15px; background:${hexSafe}; border-radius:50%; vertical-align:middle; border:1px solid #333;"></span>
+                    <input type="text" class="js-fila-nome-input" value="${nome}" maxlength="120" style="padding:6px 8px; flex:1; min-width:100px; max-width:220px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box;">
+                    <input type="color" class="js-fila-colore-input" value="${hexSafe}" title="Colore fila" aria-label="Colore fila" style="padding:0; height:32px; width:44px; border:1px solid #ccc; border-radius:4px; cursor:pointer;">
+                </div>
+            </td>
+            <td>${ordine}</td>
+            <td>
+                <a href="${baseUrl}/gare/rimuoviFilaPit/${idNum}/${garaId}" class="btn btn-danger js-rimuovi-fila" style="text-decoration:none; padding:5px 10px; font-size:0.9em; border-radius:4px;">Rimuovi</a>
+            </td>
+        `;
+    }
+
+    async function salvaFilaDaRiga(tr) {
+        const filaId = tr.getAttribute('data-fila-id');
+        const inpNome = tr.querySelector('.js-fila-nome-input');
+        const inpColore = tr.querySelector('.js-fila-colore-input');
+        const preview = tr.querySelector('.js-fila-anteprima-colore');
+        if (!filaId || !inpNome || !inpColore) {
+            return;
+        }
+        const nome = inpNome.value.trim();
+        if (!nome) {
+            alert('Il nome della fila non può essere vuoto.');
+            return;
+        }
+        const fd = new FormData();
+        fd.append('file_pit_id', filaId);
+        fd.append('nome_colore', nome);
+        fd.append('colore_hex', inpColore.value || '#343a40');
+
+        try {
+            const response = await fetchAjax(`${baseUrl}/gare/apiAggiornaFila/${garaId}`, {
+                method: 'POST',
+                body: fd
+            });
+            const d = response.data;
+            if (d && preview && d.colore_hex) {
+                preview.style.background = d.colore_hex;
+            }
+            if (d && d.nome_colore !== undefined) {
+                inpNome.value = d.nome_colore;
+            }
+            if (d && d.colore_hex !== undefined) {
+                inpColore.value = d.colore_hex;
+            }
+        } catch (errore) {
+            alert(errore.message);
+        }
+    }
+
+    function inizializzaAutosaveFila() {
+        const tbody = document.getElementById('tbody-file-pit');
+        if (!tbody) {
+            return;
+        }
+        tbody.addEventListener('focusout', function (ev) {
+            const t = ev.target;
+            if (t && t.classList && t.classList.contains('js-fila-nome-input')) {
+                const tr = t.closest('tr');
+                if (tr) {
+                    salvaFilaDaRiga(tr);
+                }
+            }
+        });
+        tbody.addEventListener('change', function (ev) {
+            const t = ev.target;
+            if (t && t.classList && t.classList.contains('js-fila-colore-input')) {
+                const tr = t.closest('tr');
+                if (tr) {
+                    salvaFilaDaRiga(tr);
+                }
+            }
+        });
+    }
+
     function aggiornaVisibilitaPlaceholder(tbodyId, emptyId, tableId) {
         const tbody = document.getElementById(tbodyId);
         const empty = document.getElementById(emptyId);
@@ -143,162 +257,240 @@
         });
     }
 
+    async function eseguiAggiungiPilotaAlRoster() {
+        if (!formAggiungiPilota) {
+            return;
+        }
+        const formData = new FormData(formAggiungiPilota);
+
+        try {
+            const response = await fetchAjax(formAggiungiPilota.action, {
+                method: 'POST',
+                body: formData
+            });
+
+            const pilota = response.data;
+            if (!pilota || !pilota.id) {
+                return;
+            }
+
+            const tbody = document.getElementById('tbody-piloti-roster');
+            if (tbody) {
+                const tr = document.createElement('tr');
+                tr.id = `pilota-row-${pilota.id}`;
+                tr.setAttribute('data-associazione-id', pilota.id);
+                tr.setAttribute('data-pilota-id', pilota.pilota_id);
+                tr.setAttribute('data-nome-pilota', `${pilota.cognome} ${pilota.nome}`);
+                tr.innerHTML = `
+                    <td>${escapeHtml(pilota.cognome)} ${escapeHtml(pilota.nome)}</td>
+                    <td>
+                        <a href="${baseUrl}/gare/rimuoviPilotaGara/${pilota.id}/${garaId}" class="btn btn-danger js-rimuovi-pilota" style="text-decoration:none; padding:5px 10px; font-size:0.9em; border-radius:4px;">Rimuovi</a>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            }
+
+            const selectPilota = document.getElementById('pilota_id');
+            if (selectPilota) {
+                const optionToRemove = selectPilota.querySelector(`option[value="${String(pilota.pilota_id)}"]`);
+                if (optionToRemove) {
+                    optionToRemove.remove();
+                }
+                selectPilota.value = '';
+            }
+
+            aggiornaVisibilitaPlaceholder('tbody-piloti-roster', 'empty-piloti-roster', 'tabella-piloti-roster');
+        } catch (errore) {
+            alert(errore.message);
+        }
+    }
+
     function inizializzaAggiungiPilota() {
         if (!formAggiungiPilota) {
             return;
         }
+        bloccaSubmitReload(formAggiungiPilota);
+        const btn = document.getElementById('btn-aggiungi-roster-pilota');
+        if (btn) {
+            btn.addEventListener('click', eseguiAggiungiPilotaAlRoster);
+        }
+    }
 
-        formAggiungiPilota.addEventListener('submit', async function (e) {
-            e.preventDefault();
-            const formData = new FormData(formAggiungiPilota);
+    async function eseguiAggiungiFilaPit() {
+        if (!formAggiungiFilaPit) {
+            return;
+        }
+        const formData = new FormData(formAggiungiFilaPit);
 
-            try {
-                const response = await fetchAjax(formAggiungiPilota.action, {
-                    method: 'POST',
-                    body: formData
-                });
+        try {
+            const response = await fetchAjax(formAggiungiFilaPit.action, {
+                method: 'POST',
+                body: formData
+            });
 
-                const pilota = response.data;
-                if (!pilota || !pilota.id) {
-                    return;
-                }
-
-                const tbody = document.getElementById('tbody-piloti-roster');
-                if (tbody) {
-                    const tr = document.createElement('tr');
-                    tr.id = `pilota-row-${pilota.id}`;
-                    tr.setAttribute('data-associazione-id', pilota.id);
-                    tr.setAttribute('data-pilota-id', pilota.pilota_id);
-                    tr.setAttribute('data-nome-pilota', `${pilota.cognome} ${pilota.nome}`);
-                    tr.innerHTML = `
-                        <td>${escapeHtml(pilota.cognome)} ${escapeHtml(pilota.nome)}</td>
-                        <td>
-                            <a href="${baseUrl}/gare/rimuoviPilotaGara/${pilota.id}/${garaId}" class="btn btn-danger js-rimuovi-pilota" style="text-decoration:none; padding:5px 10px; font-size:0.9em; border-radius:4px;">Rimuovi</a>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                }
-
-                const selectPilota = document.getElementById('pilota_id');
-                if (selectPilota) {
-                    const optionToRemove = selectPilota.querySelector(`option[value="${String(pilota.pilota_id)}"]`);
-                    if (optionToRemove) {
-                        optionToRemove.remove();
-                    }
-                    selectPilota.value = '';
-                }
-
-                aggiornaVisibilitaPlaceholder('tbody-piloti-roster', 'empty-piloti-roster', 'tabella-piloti-roster');
-            } catch (errore) {
-                alert(errore.message);
+            const fila = response.data;
+            if (!fila || !fila.id) {
+                return;
             }
-        });
+
+            const tbody = document.getElementById('tbody-file-pit');
+            if (tbody) {
+                const tr = document.createElement('tr');
+                tr.id = `fila-row-${fila.id}`;
+                tr.setAttribute('data-fila-id', fila.id);
+                tr.innerHTML = htmlCelleFilaEditable(fila);
+                tbody.appendChild(tr);
+            }
+
+            formAggiungiFilaPit.reset();
+            const colore = document.getElementById('colore_hex');
+            if (colore) {
+                colore.value = '#343a40';
+            }
+
+            aggiornaVisibilitaPlaceholder('tbody-file-pit', 'empty-file-pit', 'tabella-file-pit');
+        } catch (errore) {
+            alert(errore.message);
+        }
     }
 
     function inizializzaAggiungiFilaPit() {
         if (!formAggiungiFilaPit) {
             return;
         }
+        bloccaSubmitReload(formAggiungiFilaPit);
+        const btn = document.getElementById('btn-aggiungi-fila-pit');
+        if (btn) {
+            btn.addEventListener('click', eseguiAggiungiFilaPit);
+        }
+    }
 
-        formAggiungiFilaPit.addEventListener('submit', async function (e) {
-            e.preventDefault();
-            const formData = new FormData(formAggiungiFilaPit);
+    async function eseguiIscrizioneTeam() {
+        if (!formIscriviTeam) {
+            return;
+        }
+        const formData = new FormData(formIscriviTeam);
 
-            try {
-                const response = await fetchAjax(formAggiungiFilaPit.action, {
-                    method: 'POST',
-                    body: formData
-                });
+        try {
+            const response = await fetchAjax(formIscriviTeam.action, {
+                method: 'POST',
+                body: formData
+            });
 
-                const fila = response.data;
-                if (!fila || !fila.id) {
-                    return;
-                }
-
-                const tbody = document.getElementById('tbody-file-pit');
-                if (tbody) {
-                    const tr = document.createElement('tr');
-                    tr.id = `fila-row-${fila.id}`;
-                    tr.setAttribute('data-fila-id', fila.id);
-                    tr.innerHTML = `
-                        <td>
-                            <span style="display:inline-block; width:15px; height:15px; background:${escapeHtml(fila.colore_hex)}; border-radius:50%; margin-right:5px; vertical-align:middle; border:1px solid #333;"></span>
-                            ${escapeHtml(fila.nome_colore)}
-                        </td>
-                        <td>${escapeHtml(fila.ordine)}</td>
-                        <td>
-                            <a href="${baseUrl}/gare/rimuoviFilaPit/${fila.id}/${garaId}" class="btn btn-danger js-rimuovi-fila" style="text-decoration:none; padding:5px 10px; font-size:0.9em; border-radius:4px;">Rimuovi</a>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                }
-
-                formAggiungiFilaPit.reset();
-                const colore = document.getElementById('colore_hex');
-                if (colore) {
-                    colore.value = '#343a40';
-                }
-
-                aggiornaVisibilitaPlaceholder('tbody-file-pit', 'empty-file-pit', 'tabella-file-pit');
-            } catch (errore) {
-                alert(errore.message);
+            const iscrizione = response.data;
+            if (!iscrizione || !iscrizione.id) {
+                return;
             }
-        });
+
+            const tbody = document.getElementById('tbody-iscritti');
+            if (tbody) {
+                const tr = document.createElement('tr');
+                tr.id = `iscrizione-row-${iscrizione.id}`;
+                tr.setAttribute('data-iscrizione-id', iscrizione.id);
+                tr.setAttribute('data-team-id', iscrizione.team_id);
+                tr.setAttribute('data-nome-team', iscrizione.nome_team);
+                tr.setAttribute('data-numero-gara', iscrizione.numero_gara);
+                tr.innerHTML = `
+                    <td>${escapeHtml(iscrizione.numero_gara)}</td>
+                    <td>${escapeHtml(iscrizione.nome_team)}</td>
+                    <td>
+                        <a href="${baseUrl}/gare/modificaIscrizione/${iscrizione.id}" class="btn" style="background:#ffc107; color:black; text-decoration:none; padding:5px 10px; font-size:0.9em; border-radius:4px;">Modifica</a>
+                        <a href="${baseUrl}/gare/rimuoviIscrizione/${iscrizione.id}/${garaId}" class="btn btn-danger js-rimuovi-iscrizione" style="text-decoration:none; padding:5px 10px; font-size:0.9em; border-radius:4px; color:white;">Rimuovi</a>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            }
+
+            const selectTeam = document.getElementById('team_id');
+            if (selectTeam) {
+                const optionToRemove = selectTeam.querySelector(`option[value="${String(iscrizione.team_id)}"]`);
+                if (optionToRemove) {
+                    optionToRemove.remove();
+                }
+                selectTeam.value = '';
+            }
+            const numero = document.getElementById('numero_gara');
+            if (numero) {
+                numero.value = '';
+            }
+
+            aggiornaVisibilitaPlaceholder('tbody-iscritti', 'empty-iscritti', 'tabella-iscritti');
+        } catch (errore) {
+            alert(errore.message);
+        }
     }
 
     function inizializzaIscrizioneTeam() {
         if (!formIscriviTeam) {
             return;
         }
+        bloccaSubmitReload(formIscriviTeam);
+        const btn = document.getElementById('btn-aggiungi-iscrizione-team');
+        if (btn) {
+            btn.addEventListener('click', eseguiIscrizioneTeam);
+        }
+    }
 
-        formIscriviTeam.addEventListener('submit', async function (e) {
-            e.preventDefault();
-            const formData = new FormData(formIscriviTeam);
-
+    function inizializzaModalNuovoTeam() {
+        const form = document.getElementById('form-modal-nuovo-team');
+        const btn = document.getElementById('btn-modal-salva-team');
+        if (!form || !btn) {
+            return;
+        }
+        bloccaSubmitReload(form);
+        btn.addEventListener('click', async function () {
+            const fd = new FormData(form);
             try {
-                const response = await fetchAjax(formIscriviTeam.action, {
+                const response = await fetchAjax(`${baseUrl}/teams/store`, {
                     method: 'POST',
-                    body: formData
+                    body: fd
                 });
-
-                const iscrizione = response.data;
-                if (!iscrizione || !iscrizione.id) {
-                    return;
-                }
-
-                const tbody = document.getElementById('tbody-iscritti');
-                if (tbody) {
-                    const tr = document.createElement('tr');
-                    tr.id = `iscrizione-row-${iscrizione.id}`;
-                    tr.setAttribute('data-iscrizione-id', iscrizione.id);
-                    tr.setAttribute('data-team-id', iscrizione.team_id);
-                    tr.setAttribute('data-nome-team', iscrizione.nome_team);
-                    tr.setAttribute('data-numero-gara', iscrizione.numero_gara);
-                    tr.innerHTML = `
-                        <td>${escapeHtml(iscrizione.numero_gara)}</td>
-                        <td>${escapeHtml(iscrizione.nome_team)}</td>
-                        <td>
-                            <a href="${baseUrl}/gare/modificaIscrizione/${iscrizione.id}" class="btn" style="background:#ffc107; color:black; text-decoration:none; padding:5px 10px; font-size:0.9em; border-radius:4px;">Modifica</a>
-                            <a href="${baseUrl}/gare/rimuoviIscrizione/${iscrizione.id}/${garaId}" class="btn btn-danger js-rimuovi-iscrizione" style="text-decoration:none; padding:5px 10px; font-size:0.9em; border-radius:4px; color:white;">Rimuovi</a>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                }
-
+                const team = response.data;
                 const selectTeam = document.getElementById('team_id');
-                if (selectTeam) {
-                    const optionToRemove = selectTeam.querySelector(`option[value="${String(iscrizione.team_id)}"]`);
-                    if (optionToRemove) {
-                        optionToRemove.remove();
-                    }
-                    selectTeam.value = '';
+                if (selectTeam && team && team.id) {
+                    const opt = document.createElement('option');
+                    opt.value = String(team.id);
+                    opt.textContent = team.nome_team;
+                    selectTeam.appendChild(opt);
+                    selectTeam.value = String(team.id);
                 }
-                const numero = document.getElementById('numero_gara');
-                if (numero) {
-                    numero.value = '';
+                form.reset();
+                if (typeof closeModal === 'function') {
+                    closeModal('modal-nuovo-team');
                 }
+            } catch (errore) {
+                alert(errore.message);
+            }
+        });
+    }
 
-                aggiornaVisibilitaPlaceholder('tbody-iscritti', 'empty-iscritti', 'tabella-iscritti');
+    function inizializzaModalNuovoPilota() {
+        const form = document.getElementById('form-modal-nuovo-pilota');
+        const btn = document.getElementById('btn-modal-salva-pilota');
+        if (!form || !btn) {
+            return;
+        }
+        bloccaSubmitReload(form);
+        btn.addEventListener('click', async function () {
+            const fd = new FormData(form);
+            try {
+                const response = await fetchAjax(`${baseUrl}/piloti/store`, {
+                    method: 'POST',
+                    body: fd
+                });
+                const pilota = response.data;
+                const selectPilota = document.getElementById('pilota_id');
+                if (selectPilota && pilota && pilota.id) {
+                    const opt = document.createElement('option');
+                    opt.value = String(pilota.id);
+                    opt.textContent = `${pilota.cognome} ${pilota.nome}`;
+                    selectPilota.appendChild(opt);
+                    selectPilota.value = String(pilota.id);
+                }
+                form.reset();
+                if (typeof closeModal === 'function') {
+                    closeModal('modal-nuovo-pilota');
+                }
             } catch (errore) {
                 alert(errore.message);
             }
@@ -371,8 +563,12 @@
     }
 
     document.addEventListener('click', gestisciClickRimuovi);
+    bloccaSubmitReload(formParametri);
     inizializzaAutosaveParametri();
     inizializzaAggiungiPilota();
     inizializzaAggiungiFilaPit();
+    inizializzaAutosaveFila();
     inizializzaIscrizioneTeam();
+    inizializzaModalNuovoTeam();
+    inizializzaModalNuovoPilota();
 })();

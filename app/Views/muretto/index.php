@@ -64,14 +64,27 @@
             <h1><?php echo htmlspecialchars($gara['nome_gara']); ?> - MURETTO BOX</h1>
         </div>
         
-        <div class="pannello-superiore" id="refresh-strategia">
-            <div class="dati-globali">
+        <?php
+        $durata_min_stint_gara = $gara['durata_min_stint'] ?? null;
+        $tenuta_min_kart = ($durata_min_stint_gara === null || (int)$durata_min_stint_gara === 0)
+            ? 'N.D.'
+            : htmlspecialchars(\App\Core\TimeHelper::daMinutiaHHMM((int)$durata_min_stint_gara), ENT_QUOTES, 'UTF-8');
+        $tenuta_max_kart = htmlspecialchars(
+            \App\Core\TimeHelper::daMinutiaHHMM((int)($gara['durata_max_stint'] ?? 0)),
+            ENT_QUOTES,
+            'UTF-8'
+        );
+        ?>
+        <div class="pannello-superiore">
+            <div class="dati-globali" id="refresh-dati-generali">
                 <h3 style="margin-top:0;">Dati Generali</h3>
                 <div style="margin-bottom: 5px;">Tempo di Gara Residuo: <strong><?php echo htmlspecialchars($tempoResiduoHHMM); ?></strong></div>
-                <div>Soste Effettuate: <strong><?php echo htmlspecialchars($strategia['pit_fatti']); ?> / <?php echo htmlspecialchars($strategia['pit_minimi']); ?> minime</strong></div>
+                <div style="margin-bottom: 5px;">Soste Effettuate: <strong><?php echo htmlspecialchars($strategia['pit_fatti']); ?> / <?php echo htmlspecialchars($strategia['pit_minimi']); ?> minime</strong></div>
+                <div style="margin-bottom: 5px;">Tenuta Min Kart: <strong><?php echo $tenuta_min_kart; ?></strong></div>
+                <div>Tenuta Max Kart: <strong><?php echo $tenuta_max_kart; ?></strong></div>
             </div>
             
-            <div class="pannello-strategia" style="border-left: 5px solid <?php echo $strategia['colore_strategia']; ?>;">
+            <div class="pannello-strategia" id="refresh-strategia" style="border-left: 5px solid <?php echo $strategia['colore_strategia']; ?>;">
                 <h3 style="margin-top:0;">Pannello Strategia</h3>
                 <div style="margin-bottom: 5px;">Pit obbligatori rimanenti: <strong><?php echo htmlspecialchars($strategia['pit_rimanenti_obbligatori']); ?></strong></div>
                 <div style="margin-bottom: 5px;">Tempo Max Copribile: <strong><?php echo htmlspecialchars(\App\Core\TimeHelper::daMinutiaHHMM($strategia['tempo_massimo_copribile'])); ?></strong></div>
@@ -313,6 +326,7 @@
                 .then(function (html) {
                     const parser = new DOMParser();
                     const documentoRemoto = parser.parseFromString(html, 'text/html');
+                    aggiornaSezioneDaHtml(documentoRemoto, 'refresh-dati-generali');
                     aggiornaSezioneDaHtml(documentoRemoto, 'refresh-strategia');
                     aggiornaSezioneDaHtml(documentoRemoto, 'refresh-pilota-pista');
                     aggiornaSezioneDaHtml(documentoRemoto, 'refresh-storico-stint');

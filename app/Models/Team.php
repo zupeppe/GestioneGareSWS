@@ -54,6 +54,15 @@ class Team {
     }
 
     /**
+     * Restituisce l'ID dell'ultima riga inserita nella connessione corrente.
+     *
+     * @return int ID generato o 0 se non disponibile
+     */
+    public function ottieniUltimoIdInserito(): int {
+        return (int)$this->db->lastInsertId();
+    }
+
+    /**
      * Recupera un team per ID.
      * 
      * @param int $id ID del team

@@ -187,6 +187,39 @@ class GareController {
     }
 
     /**
+     * API: aggiorna nome e colore di una fila pit della gara (POST).
+     *
+     * Parametri attesi: file_pit_id, nome_colore (o nome_fila), colore_hex.
+     *
+     * @param int $gara_id ID della gara
+     * @return void
+     */
+    public function apiAggiornaFila($gara_id) {
+        $gara_id = (int)$gara_id;
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->rispondiJson(405, ['status' => 'error', 'message' => 'Metodo non consentito.']);
+        }
+
+        $file_pit_id = (int)($_POST['file_pit_id'] ?? 0);
+        $nome_colore = trim((string)($_POST['nome_colore'] ?? $_POST['nome_fila'] ?? ''));
+        $colore_hex = trim((string)($_POST['colore_hex'] ?? '#343a40'));
+
+        if ($gara_id <= 0 || $file_pit_id <= 0 || $nome_colore === '') {
+            $this->rispondiJson(422, ['status' => 'error', 'message' => 'Dati fila non validi.']);
+        }
+
+        $filePitModel = new FilePit();
+        $ok = $filePitModel->aggiornaPerGara($file_pit_id, $gara_id, $nome_colore, $colore_hex);
+
+        if (!$ok) {
+            $this->rispondiJson(500, ['status' => 'error', 'message' => 'Aggiornamento fila fallito.']);
+        }
+
+        $aggiornata = $filePitModel->ottieniPerId($file_pit_id);
+        $this->rispondiJson(200, ['status' => 'success', 'data' => $aggiornata]);
+    }
+
+    /**
      * Aggiunge una fila pit (corsia box) alla gara.
      * 
      * @return void
