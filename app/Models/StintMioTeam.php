@@ -214,6 +214,28 @@ class StintMioTeam {
     }
 
     /**
+     * Calcola il tempo totale di guida per un pilota (solo stint completati).
+     * 
+     * @param int $gara_id ID della gara
+     * @param int $pilota_id ID del pilota
+     * @return int Tempo totale in minuti
+     */
+    public function calcolaTempoTotalePilota($gara_id, $pilota_id) {
+        $sql = "
+            SELECT COALESCE(SUM(durata_minuti), 0) as tempo_totale
+            FROM stint_mio_team 
+            WHERE gara_id = :gara_id AND pilota_id = :pilota_id AND durata_minuti IS NOT NULL
+        ";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            ':gara_id' => $gara_id,
+            ':pilota_id' => $pilota_id
+        ]);
+        $result = $stmt->fetch();
+        return (int)$result['tempo_totale'];
+    }
+
+    /**
      * Elimina in modo sicuro uno stint attivo specifico.
      *
      * @param int $gara_id ID della gara

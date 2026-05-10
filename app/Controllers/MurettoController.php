@@ -26,6 +26,68 @@ class MurettoController {
     }
 
     /**
+     * Calcola il tempo totale di guida per ogni pilota.
+     * 
+     * @param int $gara_id ID della gara
+     * @param array $roster Piloti del team
+     * @param array $stintAttivo Stint attuale (se presente)
+     * @return array Array associativo con pilota_id => tempo_totale_minuti
+     */
+    private function calcolaTempiTotaliPiloti($gara_id, $roster, $stintAttivo) {
+        $stintModel = new StintMioTeam();
+        $tempiTotali = [];
+        
+        // Inizializza tutti i piloti a 0
+        foreach ($roster as $pilota) {
+            $tempiTotali[$pilota['pilota_id']] = 0;
+        }
+        
+        // Calcola il tempo totale per ogni pilota dagli stint completati
+        foreach ($roster as $pilota) {
+            $tempoTotale = $stintModel->calcolaTempoTotalePilota($gara_id, $pilota['pilota_id']);
+            $tempiTotali[$pilota['pilota_id']] = $tempoTotale;
+        }
+        
+        // Se c'è uno stint attivo, aggiungi il tempo già trascorso
+        if ($stintAttivo) {
+            $pilotaAttivoId = $stintAttivo['pilota_id'];
+            $minutoIngresso = $stintAttivo['minuto_ingresso'];
+            
+            // Calcola i minuti trascorsi dall'ingresso fino ad ora
+            $tempoTrascorso = $this->calcolaMinutiTrascorsiStintAttivo($gara_id, $minutoIngresso);
+            
+            if (isset($tempiTotali[$pilotaAttivoId])) {
+                $tempiTotali[$pilotaAttivoId] += $tempoTrascorso;
+            }
+        }
+        
+        return $tempiTotali;
+    }
+    
+    /**
+     * Calcola i minuti trascorsi per lo stint attivo usando la logica strategica.
+     * 
+     * @param int $gara_id ID della gara
+     * @param int $minutoIngresso Minuto di ingresso dello stint
+     * @return int Minuti trascorsi
+     */
+    private function calcolaMinutiTrascorsiStintAttivo($gara_id, $minutoIngresso) {
+        $garaModel = new Gara();
+        $gara = $garaModel->ottieniPerId($gara_id);
+        
+        // Usa la logica del tempo strategico già esistente
+        $minutiResiduiStrategici = $gara['durata_minuti'] - $minutoIngresso;
+        if ($minutiResiduiStrategici < 0) {
+            $minutiResiduiStrategici = 0;
+        }
+        
+        // Il tempo trascorso è la differenza tra durata totale e residuo strategico
+        $tempoTrascorso = $gara['durata_minuti'] - $minutiResiduiStrategici - $minutoIngresso;
+        
+        return max(0, $tempoTrascorso);
+    }
+
+    /**
      * Calcola i parametri strategici della gara.
      * 
      * @param array $gara I dati della gara (inclusi i parametri regolamentari)
@@ -132,6 +194,9 @@ class MurettoController {
         $tempoResiduoHHMM = \App\Core\TimeHelper::daMinutiaHHMM($minutiResidui);
 
         $strategia = $this->calcolaStrategia($gara, $tuttiStint, $minutiResiduiStrategici);
+
+        // Calcola i tempi totali di guida per ogni pilota
+        $tempiTotaliPiloti = $this->calcolaTempiTotaliPiloti($gara_id, $roster, $stintAttivo);
 
         // -- LOGICA SPOTTER / KART AVVERSARI --
         $iscrittoModel = new IscrittoGara();

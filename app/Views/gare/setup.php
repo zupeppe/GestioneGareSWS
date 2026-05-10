@@ -81,6 +81,14 @@
                         <label for="durata_min_stint">Durata Min Stint (minuti) [Opzionale]:</label>
                         <input type="number" id="durata_min_stint" name="durata_min_stint" value="<?php echo htmlspecialchars($gara['durata_min_stint'] ?? ''); ?>" min="0">
                     </div>
+                    <div class="form-group">
+                        <label for="tempo_max_pilota">Tempo Max per Pilota (minuti totali):</label>
+                        <input type="number" id="tempo_max_pilota" name="tempo_max_pilota" value="<?php echo htmlspecialchars($gara['tempo_max_pilota'] ?? 0); ?>" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="tempo_min_pilota">Tempo Min per Pilota (minuti totali):</label>
+                        <input type="number" id="tempo_min_pilota" name="tempo_min_pilota" value="<?php echo htmlspecialchars($gara['tempo_min_pilota'] ?? 0); ?>" min="0">
+                    </div>
                     
                     <hr style="margin: 20px 0;">
                     <h3 style="margin-top:0;">Il Nostro Team</h3>

@@ -107,6 +107,8 @@ class GareController {
             $tempo_minimo_pit = (int)($_POST['tempo_minimo_pit'] ?? 0);
             $durata_max_stint = (int)($_POST['durata_max_stint'] ?? 0);
             $durata_min_stint = isset($_POST['durata_min_stint']) && $_POST['durata_min_stint'] !== '' ? (int)$_POST['durata_min_stint'] : null;
+            $tempo_max_pilota = (int)($_POST['tempo_max_pilota'] ?? 0);
+            $tempo_min_pilota = (int)($_POST['tempo_min_pilota'] ?? 0);
             $mio_team_id = isset($_POST['mio_team_id']) && $_POST['mio_team_id'] !== '' ? (int)$_POST['mio_team_id'] : null;
 
             if ($gara_id && $nome_gara !== '' && $data_evento !== '') {
@@ -119,6 +121,8 @@ class GareController {
                     'tempo_minimo_pit' => $tempo_minimo_pit,
                     'durata_max_stint' => $durata_max_stint,
                     'durata_min_stint' => $durata_min_stint,
+                    'tempo_max_pilota' => $tempo_max_pilota,
+                    'tempo_min_pilota' => $tempo_min_pilota,
                     'mio_team_id' => $mio_team_id
                 ]);
                 $_SESSION['success'] = "Parametri gara aggiornati con successo.";
@@ -159,6 +163,8 @@ class GareController {
         $durata_min_stint = isset($payload['durata_min_stint']) && $payload['durata_min_stint'] !== ''
             ? (int)$payload['durata_min_stint']
             : null;
+        $tempo_max_pilota = (int)($payload['tempo_max_pilota'] ?? 0);
+        $tempo_min_pilota = (int)($payload['tempo_min_pilota'] ?? 0);
         $mio_team_id = isset($payload['mio_team_id']) && $payload['mio_team_id'] !== ''
             ? (int)$payload['mio_team_id']
             : null;
@@ -176,6 +182,8 @@ class GareController {
             'tempo_minimo_pit' => $tempo_minimo_pit,
             'durata_max_stint' => $durata_max_stint,
             'durata_min_stint' => $durata_min_stint,
+            'tempo_max_pilota' => $tempo_max_pilota,
+            'tempo_min_pilota' => $tempo_min_pilota,
             'mio_team_id' => $mio_team_id
         ]);
 

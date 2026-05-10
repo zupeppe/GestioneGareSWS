@@ -22,12 +22,17 @@
 - [x] Aggiornamento stato del kart in `kart_gara`.
 - [x] Logica Undo/Redo e strumenti d'emergenza.
 
-## [IN CORSO] Sprint 5: Dashboard Muretto (Desktop)
-- [ ] Chiamate Ajax (Polling) per aggiornamento real-time.
-- [ ] Integrazione dati timer stint + storico kart presi.
-- [ ] Identificazione nostro team nel database.
+## [COMPLETATO] Sprint 5: Dashboard Muretto (Desktop) e Polling
+- [x] Chiamate Ajax (Polling) per aggiornamento real-time (Vanilla JS).
+- [x] Integrazione dati timer stint + storico kart presi.
+- [x] Identificazione nostro team nel database.
 
-## [COMPLETATO] Sprint 5.1: Rifiniture e Bugfix
-- [x] Bug del Minuto Zero (Spotter): inizializzazione fila vuota e gestione team con "Nessun Kart".
-- [x] Navigazione Globale (UX): navbar condivisa su Home, Muretto e Spotter.
-- [x] Annulla Stint (Muretto): annullamento sicuro dello stint attivo con conferma utente.
+## [COMPLETATO] Sprint 5.1: Rifiniture e UX
+- [x] Bug del Minuto Zero (Inizializzazione file ai box).
+- [x] Navigazione Globale (Navbar).
+- [x] Strumenti d'emergenza (Annulla Stint).
+- [x] Salvataggio Asincrono su Setup Gara (Modifica asincrona File Pit, Team, Piloti).
+
+## [DA FARE] Sprint 6: Sicurezza e Accessi
+- [ ] Tabella Utenti e Login.
+- [ ] Protezione Rotte (RBAC - Role Based Access Control).

@@ -238,6 +238,26 @@ class SpotterController {
 
 
     /**
+     * Aggiorna il rating di un kart fermo in fila.
+     */
+    public function aggiornaRatingFila($gara_id) {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $kart_id = $_POST['kart_id'] ?? null;
+            $rating = (int)($_POST['rating'] ?? 0);
+            
+            if ($kart_id) {
+                $kartModel = new KartGara();
+                $kartModel->aggiornaRating($kart_id, $rating);
+                $_SESSION['success'] = "Rating kart aggiornato.";
+            } else {
+                $_SESSION['error'] = "ID kart non valido.";
+            }
+        }
+        header('Location: ' . BASE_URL . '/spotter/index/' . $gara_id);
+        exit;
+    }
+
+    /**
      * Resetta tutti i kart a Ignoto.
      */
     public function resetRatingGara($gara_id) {

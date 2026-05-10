@@ -45,8 +45,8 @@ class Gara {
      * @return bool True se successo, False altrimenti
      */
     public function crea($dati) {
-        $sql = "INSERT INTO gare (nome_gara, data_evento, durata_minuti, min_stint, tempo_minimo_pit, durata_max_stint, durata_min_stint, stato, mio_team_id) 
-                VALUES (:nome_gara, :data_evento, :durata_minuti, :min_stint, :tempo_minimo_pit, :durata_max_stint, :durata_min_stint, 'setup', :mio_team_id)";
+        $sql = "INSERT INTO gare (nome_gara, data_evento, durata_minuti, min_stint, tempo_minimo_pit, durata_max_stint, durata_min_stint, tempo_max_pilota, tempo_min_pilota, stato, mio_team_id) 
+                VALUES (:nome_gara, :data_evento, :durata_minuti, :min_stint, :tempo_minimo_pit, :durata_max_stint, :durata_min_stint, :tempo_max_pilota, :tempo_min_pilota, 'setup', :mio_team_id)";
         $stmt = $this->db->prepare($sql);
         return $stmt->execute([
             ':nome_gara' => $dati['nome_gara'],
@@ -56,6 +56,8 @@ class Gara {
             ':tempo_minimo_pit' => $dati['tempo_minimo_pit'] ?? 0,
             ':durata_max_stint' => $dati['durata_max_stint'] ?? 0,
             ':durata_min_stint' => (!empty($dati['durata_min_stint']) ? $dati['durata_min_stint'] : null),
+            ':tempo_max_pilota' => $dati['tempo_max_pilota'] ?? 0,
+            ':tempo_min_pilota' => $dati['tempo_min_pilota'] ?? 0,
             ':mio_team_id' => (!empty($dati['mio_team_id']) ? $dati['mio_team_id'] : null)
         ]);
     }
@@ -89,6 +91,8 @@ class Gara {
                 tempo_minimo_pit = :tempo_minimo_pit,
                 durata_max_stint = :durata_max_stint,
                 durata_min_stint = :durata_min_stint,
+                tempo_max_pilota = :tempo_max_pilota,
+                tempo_min_pilota = :tempo_min_pilota,
                 mio_team_id = :mio_team_id
                 WHERE id = :id";
         $stmt = $this->db->prepare($sql);
@@ -101,6 +105,8 @@ class Gara {
             ':tempo_minimo_pit' => $dati['tempo_minimo_pit'] ?? 0,
             ':durata_max_stint' => $dati['durata_max_stint'] ?? 0,
             ':durata_min_stint' => (!empty($dati['durata_min_stint']) ? $dati['durata_min_stint'] : null),
+            ':tempo_max_pilota' => $dati['tempo_max_pilota'] ?? 0,
+            ':tempo_min_pilota' => $dati['tempo_min_pilota'] ?? 0,
             ':mio_team_id' => (!empty($dati['mio_team_id']) ? $dati['mio_team_id'] : null)
         ]);
     }

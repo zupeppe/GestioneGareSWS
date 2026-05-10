@@ -215,6 +215,8 @@
             tempo_minimo_pit: Number(formData.get('tempo_minimo_pit') || 0),
             durata_max_stint: Number(formData.get('durata_max_stint') || 0),
             durata_min_stint: formData.get('durata_min_stint') || '',
+            tempo_max_pilota: Number(formData.get('tempo_max_pilota') || 0),
+            tempo_min_pilota: Number(formData.get('tempo_min_pilota') || 0),
             mio_team_id: formData.get('mio_team_id') || ''
         };
 

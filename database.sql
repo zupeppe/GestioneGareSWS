@@ -10,6 +10,8 @@ CREATE TABLE gare (
     tempo_minimo_pit INT DEFAULT 0,
     durata_max_stint INT DEFAULT 0,
     durata_min_stint INT,
+    tempo_max_pilota INT DEFAULT 0 COMMENT 'Tempo massimo di guida per pilota (minuti)',
+    tempo_min_pilota INT DEFAULT 0 COMMENT 'Tempo minimo di guida per pilota (minuti)',
     stato ENUM('setup', 'in_corso', 'finita') DEFAULT 'setup',
     mio_team_id INT DEFAULT NULL,
     FOREIGN KEY (mio_team_id) REFERENCES teams(id) ON DELETE SET NULL

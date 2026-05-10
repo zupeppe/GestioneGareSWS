@@ -81,7 +81,19 @@
                 <div style="margin-bottom: 5px;">Tempo di Gara Residuo: <strong><?php echo htmlspecialchars($tempoResiduoHHMM); ?></strong></div>
                 <div style="margin-bottom: 5px;">Soste Effettuate: <strong><?php echo htmlspecialchars($strategia['pit_fatti']); ?> / <?php echo htmlspecialchars($strategia['pit_minimi']); ?> minime</strong></div>
                 <div style="margin-bottom: 5px;">Tenuta Min Kart: <strong><?php echo $tenuta_min_kart; ?></strong></div>
-                <div>Tenuta Max Kart: <strong><?php echo $tenuta_max_kart; ?></strong></div>
+                <div style="margin-bottom: 5px;">Tenuta Max Kart: <strong><?php echo $tenuta_max_kart; ?></strong></div>
+                <?php if ($gara['tempo_min_pilota'] > 0 || $gara['tempo_max_pilota'] > 0): ?>
+                    <hr style="margin: 10px 0; border-top: 1px solid #ddd;">
+                    <div style="margin-bottom: 5px;">
+                        <strong>Limiti Pilota:</strong>
+                        <?php if ($gara['tempo_min_pilota'] > 0): ?>
+                            <span style="color: #28a745;"> Min: <?php echo htmlspecialchars(\App\Core\TimeHelper::daMinutiaHHMM($gara['tempo_min_pilota'])); ?></span>
+                        <?php endif; ?>
+                        <?php if ($gara['tempo_max_pilota'] > 0): ?>
+                            <span style="color: #dc3545;"> Max: <?php echo htmlspecialchars(\App\Core\TimeHelper::daMinutiaHHMM($gara['tempo_max_pilota'])); ?></span>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
             </div>
             
             <div class="pannello-strategia" id="refresh-strategia" style="border-left: 5px solid <?php echo $strategia['colore_strategia']; ?>;">
@@ -167,6 +179,65 @@
                 </form>
             </div>
         <?php endif; ?>
+        </div>
+
+        <!-- SEZIONE ROSTER PILOTI -->
+        <div id="refresh-roster-piloti">
+            <h2>Roster Piloti</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Pilota</th>
+                        <th>Totale Guidato</th>
+                        <th>Stato</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($roster as $pilota): 
+                        $tempoTotale = $tempiTotaliPiloti[$pilota['pilota_id']] ?? 0;
+                        $tempoTotaleHHMM = \App\Core\TimeHelper::daMinutiaHHMM($tempoTotale);
+                        
+                        // Determina il colore in base ai limiti
+                        $coloreTesto = '';
+                        $iconaStato = '';
+                        $statoTesto = '';
+                        
+                        if ($gara['tempo_max_pilota'] > 0) {
+                            $minutiRimanentiMax = $gara['tempo_max_pilota'] - $tempoTotale;
+                            if ($minutiRimanentiMax <= 0) {
+                                $coloreTesto = 'color: #dc3545; font-weight: bold;'; // Rosso
+                                $statoTesto = 'SUPERATO LIMITE MAX';
+                            } elseif ($minutiRimanentiMax <= 10) {
+                                $coloreTesto = 'color: #ff8c00; font-weight: bold;'; // Arancione
+                                $statoTesto = 'AVVICINATO LIMITE MAX';
+                            }
+                        }
+                        
+                        if ($gara['tempo_min_pilota'] > 0 && $tempoTotale >= $gara['tempo_min_pilota']) {
+                            $iconaStato = ' ✓';
+                            if ($statoTesto === '') $statoTesto = 'In Regola';
+                        }
+                    ?>
+                        <tr>
+                            <td><strong><?php echo htmlspecialchars($pilota['cognome'] . ' ' . $pilota['nome']); ?></strong></td>
+                            <td style="<?php echo $coloreTesto; ?>">
+                                <?php echo htmlspecialchars($tempoTotaleHHMM); ?>
+                                <?php echo $iconaStato; ?>
+                            </td>
+                            <td>
+                                <?php if ($stintAttivo && (int)$stintAttivo['pilota_id'] === (int)$pilota['pilota_id']): ?>
+                                    <span style="color: #856404; font-weight: bold;">IN PISTA</span>
+                                <?php else: ?>
+                                    <span style="color: #666;"><?php echo htmlspecialchars($statoTesto ?: 'Sotto Limite Min'); ?></span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                    <?php if (empty($roster)): ?>
+                        <tr><td colspan="3">Nessun pilota nel roster.</td></tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
         </div>
 
         <hr style="margin: 40px 0;">
@@ -329,6 +400,7 @@
                     aggiornaSezioneDaHtml(documentoRemoto, 'refresh-dati-generali');
                     aggiornaSezioneDaHtml(documentoRemoto, 'refresh-strategia');
                     aggiornaSezioneDaHtml(documentoRemoto, 'refresh-pilota-pista');
+                    aggiornaSezioneDaHtml(documentoRemoto, 'refresh-roster-piloti');
                     aggiornaSezioneDaHtml(documentoRemoto, 'refresh-storico-stint');
                     aggiornaSezioneDaHtml(documentoRemoto, 'refresh-radar');
                 })
