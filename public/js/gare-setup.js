@@ -433,144 +433,156 @@
         }
     }
 
-    function inizializzaModalNuovoTeam() {
-        const form = document.getElementById('form-modal-nuovo-team');
-        const btn = document.getElementById('btn-modal-salva-team');
-        if (!form || !btn) {
-            return;
-        }
-        bloccaSubmitReload(form);
-        btn.addEventListener('click', async function () {
-            const fd = new FormData(form);
-            try {
-                const response = await fetchAjax(`${baseUrl}/teams/store`, {
-                    method: 'POST',
-                    body: fd
-                });
-                const team = response.data;
-                const selectTeam = document.getElementById('team_id');
-                if (selectTeam && team && team.id) {
-                    const opt = document.createElement('option');
-                    opt.value = String(team.id);
-                    opt.textContent = team.nome_team;
-                    selectTeam.appendChild(opt);
-                    selectTeam.value = String(team.id);
-                }
-                form.reset();
-                if (typeof closeModal === 'function') {
-                    closeModal('modal-nuovo-team');
-                }
-            } catch (errore) {
-                alert(errore.message);
-            }
-        });
-    }
-
     function inizializzaModalNuovoPilota() {
-        const form = document.getElementById('form-modal-nuovo-pilota');
         const btn = document.getElementById('btn-modal-salva-pilota');
-        if (!form || !btn) {
-            return;
-        }
-        bloccaSubmitReload(form);
-        btn.addEventListener('click', async function () {
-            const fd = new FormData(form);
-            try {
-                const response = await fetchAjax(`${baseUrl}/piloti/store`, {
-                    method: 'POST',
-                    body: fd
-                });
-                const pilota = response.data;
-                const selectPilota = document.getElementById('pilota_id');
-                if (selectPilota && pilota && pilota.id) {
-                    const opt = document.createElement('option');
-                    opt.value = String(pilota.id);
-                    opt.textContent = `${pilota.cognome} ${pilota.nome}`;
-                    selectPilota.appendChild(opt);
-                    selectPilota.value = String(pilota.id);
-                }
-                form.reset();
-                if (typeof closeModal === 'function') {
-                    closeModal('modal-nuovo-pilota');
-                }
-            } catch (errore) {
-                alert(errore.message);
-            }
+        if (!btn) return;
+        btn.addEventListener('click', () => {
+            const form = document.getElementById('form-modal-nuovo-pilota');
+            if (form) form.submit();
         });
     }
 
-    async function gestisciClickRimuovi(event) {
-        const target = event.target.closest('a.js-rimuovi-pilota, a.js-rimuovi-fila, a.js-rimuovi-iscrizione');
-        if (!target) {
-            return;
-        }
-        event.preventDefault();
-
-        let messaggio = 'Confermi la rimozione?';
-        if (target.classList.contains('js-rimuovi-pilota')) {
-            messaggio = 'Rimuovere dal roster?';
-        } else if (target.classList.contains('js-rimuovi-fila')) {
-            messaggio = 'Rimuovere questa fila?';
-        } else if (target.classList.contains('js-rimuovi-iscrizione')) {
-            messaggio = 'Sicuro di voler rimuovere questo team dalla gara?';
-        }
-
-        if (!window.confirm(messaggio)) {
-            return;
-        }
-
-        try {
-            const response = await fetchAjax(target.href, { method: 'GET' });
-
-            const row = target.closest('tr');
-            if (row) {
-                if (target.classList.contains('js-rimuovi-pilota')) {
-                    const selectPilota = document.getElementById('pilota_id');
-                    const pilotaId = row.getAttribute('data-pilota-id');
-                    const nomePilota = row.getAttribute('data-nome-pilota');
-                    if (selectPilota && pilotaId && nomePilota && !selectPilota.querySelector(`option[value="${pilotaId}"]`)) {
-                        const option = document.createElement('option');
-                        option.value = pilotaId;
-                        option.textContent = nomePilota;
-                        selectPilota.appendChild(option);
+    /**
+     * Inizializza le checkbox per gestire lo stato 'gestito' dei team.
+     */
+    function inizializzaCheckboxGestito() {
+        console.log('DEBUG: inizializzaCheckboxGestito() called');
+        console.log('DEBUG: baseUrl =', baseUrl);
+        console.log('DEBUG: garaId =', garaId);
+        
+        const checkboxes = document.querySelectorAll('.checkbox-gestito');
+        console.log('DEBUG: checkboxes found:', checkboxes.length);
+        
+        checkboxes.forEach((checkbox, index) => {
+            console.log(`DEBUG: checkbox ${index}:`, checkbox.dataset.iscrittoId, checkbox.checked);
+            
+            checkbox.addEventListener('change', function() {
+                const iscrittoId = this.dataset.iscrittoId;
+                const isGestito = this.checked ? 1 : 0;
+                
+                console.log('DEBUG: checkbox change - iscrittoId:', iscrittoId, 'is_gestito:', isGestito);
+                console.log('DEBUG: API URL:', `${baseUrl}/gare/apiAggiornaGestito/${garaId}`);
+                
+                // Mostra stato di caricamento
+                const originalDisabled = this.disabled;
+                this.disabled = true;
+                
+                // Chiama API per aggiornare lo stato
+                fetch(`${baseUrl}/gare/apiAggiornaGestito/${garaId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        iscritto_id: parseInt(iscrittoId),
+                        is_gestito: isGestito
+                    })
+                })
+                .then(response => {
+                    console.log('DEBUG: response status:', response.status);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('DEBUG: response data:', data);
+                    if (data.status === 'success') {
+                        // Successo: mostra notifica positiva
+                        mostraNotifica(data.message, 'success');
+                    } else {
+                        // Errore: ripristina stato precedente
+                        this.checked = !this.checked;
+                        mostraNotifica(data.message || 'Errore durante l\'aggiornamento', 'error');
                     }
-                } else if (target.classList.contains('js-rimuovi-iscrizione')) {
-                    const selectTeam = document.getElementById('team_id');
-                    const teamId = row.getAttribute('data-team-id');
-                    const nomeTeam = row.getAttribute('data-nome-team');
-                    if (selectTeam && teamId && nomeTeam && !selectTeam.querySelector(`option[value="${teamId}"]`)) {
-                        const option = document.createElement('option');
-                        option.value = teamId;
-                        option.textContent = nomeTeam;
-                        selectTeam.appendChild(option);
-                    }
-                }
-                row.remove();
-            } else if (response && response.data && target.classList.contains('js-rimuovi-iscrizione')) {
-                const selectTeam = document.getElementById('team_id');
-                if (selectTeam && response.data.team_id && response.data.nome_team && !selectTeam.querySelector(`option[value="${String(response.data.team_id)}"]`)) {
-                    const option = document.createElement('option');
-                    option.value = String(response.data.team_id);
-                    option.textContent = String(response.data.nome_team);
-                    selectTeam.appendChild(option);
-                }
-            }
-
-            aggiornaVisibilitaPlaceholder('tbody-piloti-roster', 'empty-piloti-roster', 'tabella-piloti-roster');
-            aggiornaVisibilitaPlaceholder('tbody-file-pit', 'empty-file-pit', 'tabella-file-pit');
-            aggiornaVisibilitaPlaceholder('tbody-iscritti', 'empty-iscritti', 'tabella-iscritti');
-        } catch (errore) {
-            alert(errore.message);
-        }
+                })
+                .catch(error => {
+                    console.error('DEBUG: AJAX error:', error);
+                    // Ripristina stato precedente in caso di errore di rete
+                    this.checked = !this.checked;
+                    mostraNotifica('Errore di connessione: ' + error.message, 'error');
+                })
+                .finally(() => {
+                    // Ripristina stato del checkbox
+                    this.disabled = originalDisabled;
+                });
+            });
+        });
     }
 
-    document.addEventListener('click', gestisciClickRimuovi);
+    /**
+     * Mostra una notifica temporanea all'utente.
+     */
+    function mostraNotifica(messaggio, tipo = 'info') {
+        // Rimuovi notifiche esistenti
+        const notificaEsistente = document.querySelector('.notifica-flottante');
+        if (notificaEsistente) {
+            notificaEsistente.remove();
+        }
+        
+        // Crea nuova notifica
+        const notifica = document.createElement('div');
+        notifica.className = 'notifica-flottante';
+        notifica.textContent = messaggio;
+        
+        // Stile in base al tipo
+        switch(tipo) {
+            case 'success':
+                notifica.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: #28a745;
+                    color: white;
+                    padding: 12px 20px;
+                    border-radius: 6px;
+                    font-weight: bold;
+                    z-index: 9999;
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                `;
+                break;
+            case 'error':
+                notifica.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: #dc3545;
+                    color: white;
+                    padding: 12px 20px;
+                    border-radius: 6px;
+                    font-weight: bold;
+                    z-index: 9999;
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                `;
+                break;
+            default:
+                notifica.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: #17a2b8;
+                    color: white;
+                    padding: 12px 20px;
+                    border-radius: 6px;
+                    font-weight: bold;
+                    z-index: 9999;
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                `;
+        }
+        
+        document.body.appendChild(notifica);
+        
+        // Rimuovi automaticamente dopo 3 secondi
+        setTimeout(() => {
+            if (notifica.parentNode) {
+                notifica.remove();
+            }
+        }, 3000);
+    }
+
     bloccaSubmitReload(formParametri);
     inizializzaAutosaveParametri();
     inizializzaAggiungiPilota();
     inizializzaAggiungiFilaPit();
     inizializzaAutosaveFila();
     inizializzaIscrizioneTeam();
-    inizializzaModalNuovoTeam();
     inizializzaModalNuovoPilota();
+    inizializzaCheckboxGestito();
 })();

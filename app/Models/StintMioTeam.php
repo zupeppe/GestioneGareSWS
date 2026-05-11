@@ -236,6 +236,57 @@ class StintMioTeam {
     }
 
     /**
+     * Recupera lo stint attivo per un team specifico.
+     * 
+     * @param int $gara_id ID della gara
+     * @param int $team_id ID del team
+     * @return array|false
+     */
+    public function ottieniStintAttivoPerTeam($gara_id, $team_id) {
+        // Nota: questo metodo richiede una modifica alla struttura per supportare il team_id
+        // Per ora filtriamo dopo aver ottenuto tutti gli stint attivi
+        $sql = "
+            SELECT s.*, p.nome, p.cognome, i.team_id
+            FROM stint_mio_team s
+            JOIN piloti_mio_team p ON s.pilota_id = p.id
+            JOIN piloti_gara pg ON s.pilota_id = pg.pilota_id AND s.gara_id = pg.gara_id
+            JOIN iscritti_gara i ON pg.gara_id = i.gara_id AND i.team_id = :team_id
+            WHERE s.gara_id = :gara_id AND s.durata_minuti IS NULL
+            ORDER BY s.id DESC
+            LIMIT 1
+        ";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':gara_id' => $gara_id, ':team_id' => $team_id]);
+        return $stmt->fetch();
+    }
+
+    /**
+     * Recupera tutti gli stint di una gara per un team specifico.
+     * 
+     * @param int $gara_id ID della gara
+     * @param int $team_id ID del team
+     * @return array
+     */
+    public function ottieniTuttiStintGaraPerTeam($gara_id, $team_id) {
+        // Filtra gli stint per team specifico
+        $sql = "
+            SELECT s.*, p.nome, p.cognome
+            FROM stint_mio_team s
+            JOIN piloti_mio_team p ON s.pilota_id = p.id
+            WHERE s.gara_id = :gara_id 
+            AND EXISTS (
+                SELECT 1 FROM piloti_gara pg 
+                JOIN iscritti_gara i ON pg.gara_id = i.gara_id 
+                WHERE pg.gara_id = s.gara_id AND pg.pilota_id = s.pilota_id AND i.team_id = :team_id
+            )
+            ORDER BY s.id ASC
+        ";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':gara_id' => $gara_id, ':team_id' => $team_id]);
+        return $stmt->fetchAll();
+    }
+
+    /**
      * Elimina in modo sicuro uno stint attivo specifico.
      *
      * @param int $gara_id ID della gara

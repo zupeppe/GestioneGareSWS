@@ -90,20 +90,6 @@
                         <input type="number" id="tempo_min_pilota" name="tempo_min_pilota" value="<?php echo htmlspecialchars($gara['tempo_min_pilota'] ?? 0); ?>" min="0">
                     </div>
                     
-                    <hr style="margin: 20px 0;">
-                    <h3 style="margin-top:0;">Il Nostro Team</h3>
-                    <div class="form-group">
-                        <label for="mio_team_id">Identifica il nostro team (per Spotter/Muretto):</label>
-                        <select id="mio_team_id" name="mio_team_id">
-                            <option value="">-- Nessun team selezionato --</option>
-                            <?php foreach ($tuttiITeam as $t): ?>
-                                <option value="<?php echo $t['id']; ?>" <?php echo (isset($gara['mio_team_id']) && $gara['mio_team_id'] == $t['id']) ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($t['nome_team']); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    
                     <button type="button" class="btn" style="background:#0056b3;" id="btn-salva-parametri-manuale">Salvataggio Automatico Attivo</button>
                     <div class="autosave-status" id="autosave-status">Modifica un campo per salvare automaticamente.</div>
                 </form>
@@ -235,6 +221,7 @@
                 <tr>
                     <th>Numero Gara</th>
                     <th>Nome Team</th>
+                    <th>Gestito</th>
                     <th>Azioni</th>
                 </tr>
             </thead>
@@ -243,6 +230,12 @@
                     <tr id="iscrizione-row-<?php echo (int)$iscritto['id']; ?>" data-iscrizione-id="<?php echo (int)$iscritto['id']; ?>" data-team-id="<?php echo (int)$iscritto['team_id']; ?>" data-nome-team="<?php echo htmlspecialchars($iscritto['nome_team'], ENT_QUOTES, 'UTF-8'); ?>" data-numero-gara="<?php echo htmlspecialchars($iscritto['numero_gara'], ENT_QUOTES, 'UTF-8'); ?>">
                         <td><?php echo htmlspecialchars($iscritto['numero_gara']); ?></td>
                         <td><?php echo htmlspecialchars($iscritto['nome_team']); ?></td>
+                        <td>
+                            <input type="checkbox" 
+                                   class="checkbox-gestito" 
+                                   data-iscritto-id="<?php echo (int)$iscritto['id']; ?>" 
+                                   <?php echo ($iscritto['is_gestito'] == 1) ? 'checked' : ''; ?>>
+                        </td>
                         <td>
                             <a href="<?php echo BASE_URL; ?>/gare/modificaIscrizione/<?php echo $iscritto['id']; ?>" class="btn" style="background:#ffc107; color:black; text-decoration:none; padding:5px 10px; font-size:0.9em; border-radius:4px;">Modifica</a>
                             <a href="<?php echo BASE_URL; ?>/gare/rimuoviIscrizione/<?php echo $iscritto['id']; ?>/<?php echo $gara['id']; ?>" class="btn btn-danger js-rimuovi-iscrizione" style="text-decoration:none; padding:5px 10px; font-size:0.9em; border-radius:4px; color:white;">Rimuovi</a>

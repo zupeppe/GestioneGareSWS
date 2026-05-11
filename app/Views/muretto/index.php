@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Muretto Box - SWS Endurance Manager</title>
+    <title>Muretto Box - <?php echo htmlspecialchars($gara['nome_gara']); ?><?php echo isset($teamSelezionato) ? ' - ' . htmlspecialchars($teamSelezionato['nome_team']) : ''; ?></title>
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>/public/css/style.css">
     <style>
         .muretto-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
@@ -61,7 +61,7 @@
     <?php require_once dirname(__DIR__) . '/layout/navbar.php'; ?>
     <div class="muretto-container">
         <div class="header-gara">
-            <h1><?php echo htmlspecialchars($gara['nome_gara']); ?> - MURETTO BOX</h1>
+            <h1><?php echo htmlspecialchars($gara['nome_gara']); ?> - MURETTO BOX<?php echo isset($teamSelezionato) ? ' - ' . htmlspecialchars($teamSelezionato['nome_team']) : ''; ?></h1>
         </div>
         
         <?php

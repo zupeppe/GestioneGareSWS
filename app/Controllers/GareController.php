@@ -137,6 +137,76 @@ class GareController {
     }
 
     /**
+     * API JSON per aggiornare lo stato di gestione di un team (is_gestito).
+     *
+     * @param int $gara_id ID della gara
+     * @return void
+     */
+    public function apiAggiornaGestito($gara_id) {
+        // DEBUG LOG
+        error_log("DEBUG: apiAggiornaGestito called with gara_id: $gara_id");
+        error_log("DEBUG: REQUEST_METHOD: " . $_SERVER['REQUEST_METHOD']);
+        error_log("DEBUG: POST data: " . file_get_contents('php://input'));
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            error_log("DEBUG: Method not allowed");
+            $this->rispondiJson(405, ['status' => 'error', 'message' => 'Metodo non consentito.']);
+            return;
+        }
+
+        $raw = file_get_contents('php://input');
+        $payload = json_decode($raw, true);
+
+        error_log("DEBUG: Payload decoded: " . print_r($payload, true));
+
+        if (!is_array($payload)) {
+            error_log("DEBUG: Invalid JSON payload");
+            $this->rispondiJson(400, ['status' => 'error', 'message' => 'Payload JSON non valido.']);
+            return;
+        }
+
+        $iscritto_id = (int)($payload['iscritto_id'] ?? 0);
+        $is_gestito = (int)($payload['is_gestito'] ?? 0);
+
+        error_log("DEBUG: Parsed values - iscritto_id: $iscritto_id, is_gestito: $is_gestito");
+
+        if ($iscritto_id <= 0) {
+            error_log("DEBUG: Invalid iscritto_id");
+            $this->rispondiJson(400, ['status' => 'error', 'message' => 'ID iscritto non valido.']);
+            return;
+        }
+
+        // Verifica limite massimo di 4 team gestiti
+        $iscrittoModel = new IscrittoGara();
+        if ($is_gestito === 1) {
+            $teamGestiti = $iscrittoModel->contaGestiti($gara_id);
+            if ($teamGestiti >= 4) {
+                $this->rispondiJson(400, ['status' => 'error', 'message' => 'Puoi gestire al massimo 4 team per gara.']);
+            }
+        }
+
+        try {
+            error_log("DEBUG: Calling aggiornaGestito with iscritto_id: $iscritto_id, is_gestito: $is_gestito");
+            $result = $iscrittoModel->aggiornaGestito($iscritto_id, $is_gestito);
+            error_log("DEBUG: aggiornaGestito result: " . ($result ? 'true' : 'false'));
+            
+            if ($result) {
+                error_log("DEBUG: Success - sending JSON response");
+                $this->rispondiJson(200, [
+                    'status' => 'success', 
+                    'message' => $is_gestito ? 'Team aggiunto ai gestiti.' : 'Team rimosso dai gestiti.'
+                ]);
+            } else {
+                error_log("DEBUG: Database update failed");
+                $this->rispondiJson(500, ['status' => 'error', 'message' => 'Errore durante l\'aggiornamento.']);
+            }
+        } catch (Exception $e) {
+            error_log("DEBUG: Exception: " . $e->getMessage());
+            $this->rispondiJson(500, ['status' => 'error', 'message' => 'Errore del server.']);
+        }
+    }
+
+    /**
      * API JSON per aggiornare i parametri gara senza ricaricare la pagina setup.
      *
      * @param int $gara_id ID della gara

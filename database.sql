@@ -33,6 +33,7 @@ CREATE TABLE iscritti_gara (
     gara_id INT NOT NULL,
     team_id INT NOT NULL,
     numero_gara INT,
+    is_gestito TINYINT DEFAULT 0 COMMENT '0: non gestito, 1: team della nostra scuderia',
     FOREIGN KEY (gara_id) REFERENCES gare(id) ON DELETE CASCADE,
     FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;

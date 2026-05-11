@@ -33,6 +33,11 @@
 - [x] Strumenti d'emergenza (Annulla Stint).
 - [x] Salvataggio Asincrono su Setup Gara (Modifica asincrona File Pit, Team, Piloti).
 
+## [IN CORSO] Sprint 5.3: Gestione Multi-Team e Home Redesign
+- [ ] Supporto fino a 4 team monitorati contemporaneamente per gara.
+- [ ] Interfaccia Muretto Multi-Team (layout a colonne).
+- [ ] Redesign grafico della Home Page e navigazione semplificata.
+
 ## [DA FARE] Sprint 6: Sicurezza e Accessi
 - [ ] Tabella Utenti e Login.
 - [ ] Protezione Rotte (RBAC - Role Based Access Control).

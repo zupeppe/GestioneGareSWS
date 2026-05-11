@@ -144,13 +144,25 @@ class MurettoController {
         ];
     }
 
-    public function index($gara_id) {
+    public function index($gara_id, $team_id = null) {
         $garaModel = new Gara();
         $gara = $garaModel->ottieniPerId($gara_id);
 
         if (!$gara) {
             header('Location: ' . BASE_URL . '/home/index');
             exit;
+        }
+
+        // Se è specificato un team_id, verifichiamo che esista e sia gestito
+        $teamSelezionato = null;
+        if ($team_id) {
+            $iscrittoModel = new IscrittoGara();
+            $iscritto = $iscrittoModel->ottieniPerTeamEGara($gara_id, $team_id);
+            if (!$iscritto || $iscritto['is_gestito'] != 1) {
+                header('Location: ' . BASE_URL . '/home/index');
+                exit;
+            }
+            $teamSelezionato = $iscritto;
         }
 
         $pilotiGaraModel = new PilotiGara();
@@ -236,6 +248,108 @@ class MurettoController {
         }
 
         require_once BASE_PATH . '/app/Views/muretto/index.php';
+    }
+
+    /**
+     * Mostra il muretto multi-team con tutti i team gestiti affiancati.
+     * 
+     * @param int $gara_id ID della gara
+     * @return void
+     */
+    public function multi($gara_id) {
+        $garaModel = new Gara();
+        $gara = $garaModel->ottieniPerId($gara_id);
+
+        if (!$gara) {
+            header('Location: ' . BASE_URL . '/home/index');
+            exit;
+        }
+
+        // Recupera tutti i team gestiti per questa gara
+        $iscrittoModel = new IscrittoGara();
+        $teamGestiti = $iscrittoModel->ottieniGestitiPerGara($gara_id);
+
+        if (empty($teamGestiti)) {
+            // Se non ci sono team gestiti, reindirizza al setup
+            header('Location: ' . BASE_URL . '/gare/setup/' . $gara_id);
+            exit;
+        }
+
+        // Prepara i dati per ogni team
+        $teamData = [];
+        foreach ($teamGestiti as $team) {
+            $teamData[] = $this->preparaDatiTeam($gara_id, $team, $gara);
+        }
+
+        require_once BASE_PATH . '/app/Views/muretto/multi.php';
+    }
+
+    /**
+     * Prepara i dati per un singolo team per il muretto multi-team.
+     * 
+     * @param int $gara_id ID della gara
+     * @param array $team Dati del team
+     * @param array $gara Dati della gara
+     * @return array Dati completi del team
+     */
+    private function preparaDatiTeam($gara_id, $team, $gara) {
+        $pilotiGaraModel = new PilotiGara();
+        $roster = $pilotiGaraModel->ottieniPerGara($gara_id);
+
+        $stintModel = new StintMioTeam();
+        
+        // Filtra gli stint per questo team specifico
+        $stintAttivo = $stintModel->ottieniStintAttivoPerTeam($gara_id, $team['team_id']);
+        $tuttiStint = $stintModel->ottieniTuttiStintGaraPerTeam($gara_id, $team['team_id']);
+
+        // Calcoliamo dove siamo arrivati col tempo
+        $minutoUltimaUscita = 0;
+        foreach ($tuttiStint as $stint) {
+            if ($stint['durata_minuti'] !== null) {
+                $uscita = $stint['minuto_ingresso'] + $stint['durata_minuti'];
+                if ($uscita > $minutoUltimaUscita) {
+                    $minutoUltimaUscita = $uscita;
+                }
+            }
+        }
+        
+        $minutiResidui = $gara['durata_minuti'] - $minutoUltimaUscita;
+        if ($minutiResidui < 0) {
+            $minutiResidui = 0;
+        }
+
+        // Calcolo tempo residuo strategico
+        $minuto_strategico_partenza = 0;
+        if ($stintAttivo) {
+            $minuto_strategico_partenza = $stintAttivo['minuto_ingresso'];
+        } else {
+            $minuto_strategico_partenza = $minutoUltimaUscita;
+        }
+
+        $minutiResiduiStrategici = $gara['durata_minuti'] - $minuto_strategico_partenza;
+        if ($minutiResiduiStrategici < 0) {
+            $minutiResiduiStrategici = 0;
+        }
+
+        require_once dirname(__DIR__) . '/Core/TimeHelper.php';
+        $tempoResiduoHHMM = \App\Core\TimeHelper::daMinutiaHHMM($minutiResidui);
+
+        $strategia = $this->calcolaStrategia($gara, $tuttiStint, $minutiResiduiStrategici);
+
+        // Calcola i tempi totali di guida per ogni pilota
+        $tempiTotaliPiloti = $this->calcolaTempiTotaliPiloti($gara_id, $roster, $stintAttivo);
+
+        return [
+            'team' => $team,
+            'gara' => $gara,
+            'roster' => $roster,
+            'stintAttivo' => $stintAttivo,
+            'tuttiStint' => $tuttiStint,
+            'tempoResiduoHHMM' => $tempoResiduoHHMM,
+            'strategia' => $strategia,
+            'tempiTotaliPiloti' => $tempiTotaliPiloti,
+            'minutiResidui' => $minutiResidui
+        ];
     }
 
     public function inizia($gara_id) {
