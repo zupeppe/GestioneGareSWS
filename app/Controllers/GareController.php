@@ -89,6 +89,9 @@ class GareController {
         $pilotiRoster = $pilotiGaraModel->ottieniPerGara($gara_id);
         $pilotiDisponibili = $pilotiGaraModel->ottieniNonIscritti($gara_id);
 
+        // Recupera i team gestiti per il form piloti
+        $teamGestiti = $iscrittoModel->ottieniGestitiPerGara($gara_id);
+
         require_once BASE_PATH . '/app/Views/gare/setup.php';
     }
 
@@ -143,13 +146,7 @@ class GareController {
      * @return void
      */
     public function apiAggiornaGestito($gara_id) {
-        // DEBUG LOG
-        error_log("DEBUG: apiAggiornaGestito called with gara_id: $gara_id");
-        error_log("DEBUG: REQUEST_METHOD: " . $_SERVER['REQUEST_METHOD']);
-        error_log("DEBUG: POST data: " . file_get_contents('php://input'));
-        
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            error_log("DEBUG: Method not allowed");
             $this->rispondiJson(405, ['status' => 'error', 'message' => 'Metodo non consentito.']);
             return;
         }
@@ -157,10 +154,7 @@ class GareController {
         $raw = file_get_contents('php://input');
         $payload = json_decode($raw, true);
 
-        error_log("DEBUG: Payload decoded: " . print_r($payload, true));
-
         if (!is_array($payload)) {
-            error_log("DEBUG: Invalid JSON payload");
             $this->rispondiJson(400, ['status' => 'error', 'message' => 'Payload JSON non valido.']);
             return;
         }
@@ -168,10 +162,7 @@ class GareController {
         $iscritto_id = (int)($payload['iscritto_id'] ?? 0);
         $is_gestito = (int)($payload['is_gestito'] ?? 0);
 
-        error_log("DEBUG: Parsed values - iscritto_id: $iscritto_id, is_gestito: $is_gestito");
-
         if ($iscritto_id <= 0) {
-            error_log("DEBUG: Invalid iscritto_id");
             $this->rispondiJson(400, ['status' => 'error', 'message' => 'ID iscritto non valido.']);
             return;
         }
@@ -186,22 +177,17 @@ class GareController {
         }
 
         try {
-            error_log("DEBUG: Calling aggiornaGestito with iscritto_id: $iscritto_id, is_gestito: $is_gestito");
             $result = $iscrittoModel->aggiornaGestito($iscritto_id, $is_gestito);
-            error_log("DEBUG: aggiornaGestito result: " . ($result ? 'true' : 'false'));
             
             if ($result) {
-                error_log("DEBUG: Success - sending JSON response");
                 $this->rispondiJson(200, [
                     'status' => 'success', 
                     'message' => $is_gestito ? 'Team aggiunto ai gestiti.' : 'Team rimosso dai gestiti.'
                 ]);
             } else {
-                error_log("DEBUG: Database update failed");
                 $this->rispondiJson(500, ['status' => 'error', 'message' => 'Errore durante l\'aggiornamento.']);
             }
         } catch (Exception $e) {
-            error_log("DEBUG: Exception: " . $e->getMessage());
             $this->rispondiJson(500, ['status' => 'error', 'message' => 'Errore del server.']);
         }
     }
@@ -381,10 +367,32 @@ class GareController {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $gara_id = (int)($_POST['gara_id'] ?? 0);
             $pilota_id = (int)($_POST['pilota_id'] ?? 0);
+            $team_id = (int)($_POST['team_id'] ?? 0);
 
-            if ($gara_id > 0 && $pilota_id > 0) {
+            if ($gara_id > 0 && $pilota_id > 0 && $team_id > 0) {
+                // Validazione: verifica che il team sia gestito per questa gara
+                $iscrittoModel = new IscrittoGara();
+                $teamGestito = $iscrittoModel->ottieniPerTeamEGara($gara_id, $team_id);
+                if (!$teamGestito || $teamGestito['is_gestito'] != 1) {
+                    if ($this->eRichiestaAjax()) {
+                        $this->rispondiJson(422, ['status' => 'error', 'message' => 'Team non valido o non gestito.']);
+                    }
+                    $_SESSION['error'] = "Team non valido o non gestito.";
+                    return;
+                }
+
+                // Validazione: verifica che il pilota non sia già iscritto a qualsiasi team in questa gara
                 $pilotiGaraModel = new PilotiGara();
-                $creato = $pilotiGaraModel->crea($gara_id, $pilota_id);
+                $pilotaEsistente = $pilotiGaraModel->ottieniPilotaPerGara($gara_id, $pilota_id);
+                if ($pilotaEsistente) {
+                    if ($this->eRichiestaAjax()) {
+                        $this->rispondiJson(422, ['status' => 'error', 'message' => 'Questo pilota è già iscritto a un team in questa gara.']);
+                    }
+                    $_SESSION['error'] = "Questo pilota è già iscritto a un team in questa gara.";
+                    return;
+                }
+
+                $creato = $pilotiGaraModel->crea($gara_id, $pilota_id, $team_id);
 
                 if ($this->eRichiestaAjax()) {
                     if (!$creato) {
@@ -606,6 +614,27 @@ class GareController {
         }
         
         header('Location: ' . BASE_URL . '/home/index');
+        exit;
+    }
+
+    /**
+     * API endpoint per ottenere i team gestiti per il form piloti
+     * 
+     * @param int $gara_id ID della gara
+     * @return void
+     */
+    public function apiTeamGestiti($gara_id) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'error', 'message' => 'Metodo non consentito']);
+            exit;
+        }
+
+        $iscrittoModel = new IscrittoGara();
+        $teamGestiti = $iscrittoModel->ottieniGestitiPerGara($gara_id);
+
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 'success', 'data' => $teamGestiti]);
         exit;
     }
 }

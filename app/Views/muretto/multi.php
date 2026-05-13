@@ -169,7 +169,7 @@
     <?php else: ?>
         <div class="multi-container">
             <?php foreach ($teamData as $data): ?>
-                <div class="team-column">
+                <div class="team-column" data-team-id="<?php echo $data['team']['team_id']; ?>">
                     <div class="team-header">
                         <h3 class="team-title"><?php echo htmlspecialchars($data['team']['nome_team']); ?></h3>
                         <div class="team-number">N° <?php echo htmlspecialchars($data['team']['numero_gara']); ?></div>
@@ -236,10 +236,88 @@
     <?php endif; ?>
     
     <script>
-        // Polling ogni 5 secondi per aggiornare i dati
+        // Polling AJAX ogni 5 secondi per aggiornare i dati
         setInterval(() => {
-            window.location.reload();
+            fetch('<?php echo BASE_URL; ?>/muretto/apiMultiData/<?php echo $gara['id']; ?>')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        aggiornaTeamColumns(data.data);
+                    }
+                })
+                .catch(error => {
+                    console.error('Errore polling:', error);
+                });
         }, 5000);
+
+        function aggiornaTeamColumns(teamData) {
+            teamData.forEach(team => {
+                const column = document.querySelector(`[data-team-id="${team.team_id}"]`);
+                if (column) {
+                    // Aggiorna pilota in pista
+                    const pilotaSection = column.querySelector('.mini-section');
+                    if (pilotaSection) {
+                        if (team.stintAttivo) {
+                            pilotaSection.innerHTML = `
+                                <h4>Pilota in pista</h4>
+                                <div class="pilot-info">
+                                    <span class="pilot-name">${team.stintAttivo.cognome} ${team.stintAttivo.nome}</span>
+                                    <span class="pilot-time">Minuto ${team.stintAttivo.minuto_ingresso}</span>
+                                </div>
+                                <div style="text-align: center; margin-top: 10px;">
+                                    <a href="<?php echo BASE_URL; ?>/muretto/termina/<?php echo $gara['id']; ?>/${team.stintAttivo.id}" 
+                                       class="btn-mini btn-stop">Termina Stint</a>
+                                </div>
+                            `;
+                        } else {
+                            pilotaSection.innerHTML = `
+                                <h4>Pilota in pista</h4>
+                                <div style="text-align: center; color: #666; padding: 10px;">
+                                    Nessun pilota in pista
+                                </div>
+                                <div style="text-align: center; margin-top: 10px;">
+                                    <a href="<?php echo BASE_URL; ?>/muretto/inizia/<?php echo $gara['id']; ?>" 
+                                       class="btn-mini btn-start">Inizia Stint</a>
+                                </div>
+                            `;
+                        }
+                    }
+
+                    // Aggiorna strategia
+                    const strategiaSection = column.querySelectorAll('.mini-section')[1];
+                    if (strategiaSection && team.strategia) {
+                        strategiaSection.innerHTML = `
+                            <h4>Strategia</h4>
+                            <div class="strategia-info">
+                                <div>Pit residui: <strong>${team.strategia.pit_rimanenti_obbligatori}</strong></div>
+                                <div>Tempo max copribile: <strong>${team.strategia.tempo_massimo_copribile}</strong></div>
+                                <div>Jolly residui: <span class="jolly-count">${team.strategia.jolly_disponibili}</span></div>
+                                <div>Stato: <strong style="color: ${team.strategia.colore_strategia};">${team.strategia.stato_strategia}</strong></div>
+                            </div>
+                        `;
+                    }
+
+                    // Aggiorna tempi piloti
+                    const tempiSection = column.querySelectorAll('.mini-section')[2];
+                    if (tempiSection && team.roster && team.tempiTotaliPiloti) {
+                        let tempiHtml = '<h4>Tempi Piloti</h4>';
+                        team.roster.forEach(pilota => {
+                            const tempoTotale = team.tempiTotaliPiloti[pilota.pilota_id] || 0;
+                            const tempoFormattato = tempoTotale > 0 ? 
+                                Math.floor(tempoTotale / 60) + ':' + String(tempoTotale % 60).padStart(2, '0') : '0:00';
+                            
+                            tempiHtml += `
+                                <div class="pilot-info">
+                                    <span class="pilot-name">${pilota.cognome} ${pilota.nome}</span>
+                                    <span class="pilot-time">${tempoFormattato}</span>
+                                </div>
+                            `;
+                        });
+                        tempiSection.innerHTML = tempiHtml;
+                    }
+                }
+            });
+        }
     </script>
 </body>
 </html>

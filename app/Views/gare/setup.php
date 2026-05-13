@@ -112,6 +112,17 @@
                                 <?php endforeach; ?>
                             </select>
                         </div>
+                        <div style="flex-grow: 1;">
+                            <label for="team_id_pilota">Team:</label>
+                            <select id="team_id_pilota" name="team_id" required>
+                                <option value="">-- Seleziona Team --</option>
+                                <?php foreach ($teamGestiti as $team): ?>
+                                    <option value="<?php echo $team['team_id']; ?>">
+                                        <?php echo htmlspecialchars($team['nome_team']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
                         <div>
                             <button type="button" class="btn btn-secondary" onclick="openModal('modal-nuovo-pilota')" style="background:#6c757d; height: 35px; line-height: 15px;">+ Nuovo</button>
                         </div>

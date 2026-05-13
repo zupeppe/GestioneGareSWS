@@ -52,12 +52,14 @@ CREATE TABLE stint_mio_team (
     id INT AUTO_INCREMENT PRIMARY KEY,
     gara_id INT NOT NULL,
     pilota_id INT NOT NULL,
+    team_id INT NULL,
     kart_id INT,
     minuto_ingresso INT DEFAULT 0,
     durata_minuti INT,
     note TEXT,
     FOREIGN KEY (gara_id) REFERENCES gare(id) ON DELETE CASCADE,
     FOREIGN KEY (pilota_id) REFERENCES piloti_mio_team(id) ON DELETE CASCADE,
+    FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE SET NULL,
     FOREIGN KEY (kart_id) REFERENCES kart_gara(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
@@ -89,6 +91,8 @@ CREATE TABLE piloti_gara (
     id INT AUTO_INCREMENT PRIMARY KEY,
     gara_id INT NOT NULL,
     pilota_id INT NOT NULL,
+    team_id INT NULL,
     FOREIGN KEY (gara_id) REFERENCES gare(id) ON DELETE CASCADE,
-    FOREIGN KEY (pilota_id) REFERENCES piloti_mio_team(id) ON DELETE CASCADE
+    FOREIGN KEY (pilota_id) REFERENCES piloti_mio_team(id) ON DELETE CASCADE,
+    FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;

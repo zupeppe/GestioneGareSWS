@@ -142,15 +142,8 @@ class IscrittoGara {
      */
     public function aggiornaGestito($id, $is_gestito) {
         $sql = "UPDATE iscritti_gara SET is_gestito = :is_gestito WHERE id = :id";
-        error_log("DEBUG: SQL: $sql, params: is_gestito=$is_gestito, id=$id");
-        
         $stmt = $this->db->prepare($sql);
-        $result = $stmt->execute([':is_gestito' => $is_gestito, ':id' => $id]);
-        
-        error_log("DEBUG: SQL execute result: " . ($result ? 'true' : 'false'));
-        error_log("DEBUG: PDO error info: " . print_r($stmt->errorInfo(), true));
-        
-        return $result;
+        return $stmt->execute([':is_gestito' => $is_gestito, ':id' => $id]);
     }
 
     /**

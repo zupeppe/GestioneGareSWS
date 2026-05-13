@@ -8,6 +8,7 @@ use App\Models\IscrittoGara;
 use App\Models\KartGara;
 use App\Models\FilePit;
 use App\Core\TimeHelper;
+use Database;
 
 /**
  * Classe MurettoController
@@ -166,12 +167,12 @@ class MurettoController {
         }
 
         $pilotiGaraModel = new PilotiGara();
-        $roster = $pilotiGaraModel->ottieniPerGara($gara_id);
+        $roster = $pilotiGaraModel->ottieniPerGaraETeam($gara_id, $team_id);
 
         $stintModel = new StintMioTeam();
         
-        $stintAttivo = $stintModel->ottieniStintAttivo($gara_id);
-        $tuttiStint = $stintModel->ottieniTuttiStintGara($gara_id);
+        $stintAttivo = $stintModel->ottieniStintAttivo($gara_id, $team_id);
+        $tuttiStint = $stintModel->ottieniTuttiStintGara($gara_id, $team_id);
 
         // Calcoliamo dove siamo arrivati col tempo
         $minutoUltimaUscita = 0;
@@ -294,13 +295,13 @@ class MurettoController {
      */
     private function preparaDatiTeam($gara_id, $team, $gara) {
         $pilotiGaraModel = new PilotiGara();
-        $roster = $pilotiGaraModel->ottieniPerGara($gara_id);
+        $roster = $pilotiGaraModel->ottieniPerGaraETeam($gara_id, $team['team_id']);
 
         $stintModel = new StintMioTeam();
         
         // Filtra gli stint per questo team specifico
-        $stintAttivo = $stintModel->ottieniStintAttivoPerTeam($gara_id, $team['team_id']);
-        $tuttiStint = $stintModel->ottieniTuttiStintGaraPerTeam($gara_id, $team['team_id']);
+        $stintAttivo = $stintModel->ottieniStintAttivo($gara_id, $team['team_id']);
+        $tuttiStint = $stintModel->ottieniTuttiStintGara($gara_id, $team['team_id']);
 
         // Calcoliamo dove siamo arrivati col tempo
         $minutoUltimaUscita = 0;
@@ -357,12 +358,70 @@ class MurettoController {
             $pilota_id = $_POST['pilota_id'] ?? null;
 
             if ($pilota_id) {
+                $pilotiGaraModel = new PilotiGara();
+                $roster = $pilotiGaraModel->ottieniPerGara($gara_id);
+                
                 $stintModel = new StintMioTeam();
                 
-                if ($stintModel->ottieniStintAttivo($gara_id)) {
+                // Ottieni team_id dal pilota selezionato
+                $team_id = null;
+                $pilotaTrovato = false;
+                
+                // Verifica se team_id esiste nel database
+                try {
+                    $sql = "SELECT team_id FROM piloti_gara LIMIT 1";
+                    Database::getIstanza()->getConnessione()->query($sql);
+                    $hasTeamId = true;
+                } catch (Exception $e) {
+                    $hasTeamId = false;
+                }
+                
+                if ($hasTeamId) {
+                    // Database con team_id - cerca il team del pilota
+                    foreach ($roster as $pilota) {
+                        if ($pilota['pilota_id'] == $pilota_id) {
+                            if ($pilota['team_id']) {
+                                // Pilota ha già team_id
+                                $team_id = $pilota['team_id'];
+                                $pilotaTrovato = true;
+                                break;
+                            } else {
+                                // Pilota con team_id NULL - assegna al primo team gestito
+                                $iscrittoModel = new IscrittoGara();
+                                $teamGestiti = $iscrittoModel->ottieniGestitiPerGara($gara_id);
+                                
+                                if (!empty($teamGestiti)) {
+                                    $team_id = $teamGestiti[0]['team_id'];
+                                    $pilotaTrovato = true;
+                                    
+                                    // Aggiorna il pilota con il team_id
+                                    $pilotiGaraModel->aggiornaTeamId($pilota['id'], $team_id);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (!$team_id) {
+                        $_SESSION['error'] = "Il pilota selezionato non è associato a un team gestito.";
+                    }
+                } else {
+                    // Database senza team_id - usa il primo team gestito disponibile
+                    $iscrittoModel = new IscrittoGara();
+                    $teamGestiti = $iscrittoModel->ottieniGestitiPerGara($gara_id);
+                    
+                    if (!empty($teamGestiti)) {
+                        $team_id = $teamGestiti[0]['team_id'];
+                        $pilotaTrovato = true;
+                    }
+                }
+                
+                if (!$pilotaTrovato) {
+                    $_SESSION['error'] = "Pilota non trovato nel roster.";
+                } elseif ($stintModel->ottieniStintAttivo($gara_id, $team_id)) {
                     $_SESSION['error'] = "C'è già un pilota in pista! Termina il suo stint prima di farne salire un altro.";
                 } else {
-                    $stintModel->iniziaStint($gara_id, $pilota_id);
+                    $stintModel->iniziaStint($gara_id, $pilota_id, $team_id);
                     $_SESSION['success'] = "Stint iniziato.";
                 }
             } else {
@@ -532,6 +591,55 @@ class MurettoController {
             'nostro_kart' => $nostro_kart,
             'kart_in_fila' => $kart_in_fila
         ]);
+        exit;
+    }
+
+    /**
+     * API endpoint per polling AJAX dei dati multi-team
+     * 
+     * @param int $gara_id ID della gara
+     * @return void
+     */
+    public function apiMultiData($gara_id) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'error', 'message' => 'Metodo non consentito']);
+            exit;
+        }
+
+        $garaModel = new Gara();
+        $gara = $garaModel->ottieniPerId($gara_id);
+
+        if (!$gara) {
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'error', 'message' => 'Gara non trovata']);
+            exit;
+        }
+
+        $iscrittoModel = new IscrittoGara();
+        $teamGestiti = $iscrittoModel->ottieniGestitiPerGara($gara_id);
+
+        if (empty($teamGestiti)) {
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'success', 'data' => []]);
+            exit;
+        }
+
+        $multiData = [];
+
+        foreach ($teamGestiti as $team) {
+            $teamData = $this->preparaDatiTeam($gara_id, $team, $gara);
+            $multiData[] = [
+                'team_id' => $team['team_id'],
+                'stintAttivo' => $teamData['stintAttivo'],
+                'strategia' => $teamData['strategia'],
+                'roster' => $teamData['roster'],
+                'tempiTotaliPiloti' => $teamData['tempiTotaliPiloti']
+            ];
+        }
+
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 'success', 'data' => $multiData]);
         exit;
     }
 }

@@ -396,6 +396,10 @@
                     <td>${escapeHtml(iscrizione.numero_gara)}</td>
                     <td>${escapeHtml(iscrizione.nome_team)}</td>
                     <td>
+                        <input type="checkbox" class="checkbox-gestito" data-iscritto-id="${iscrizione.id}" ${iscrizione.is_gestito ? 'checked' : ''}>
+                        <small style="color: #666;">Gestito</small>
+                    </td>
+                    <td>
                         <a href="${baseUrl}/gare/modificaIscrizione/${iscrizione.id}" class="btn" style="background:#ffc107; color:black; text-decoration:none; padding:5px 10px; font-size:0.9em; border-radius:4px;">Modifica</a>
                         <a href="${baseUrl}/gare/rimuoviIscrizione/${iscrizione.id}/${garaId}" class="btn btn-danger js-rimuovi-iscrizione" style="text-decoration:none; padding:5px 10px; font-size:0.9em; border-radius:4px; color:white;">Rimuovi</a>
                     </td>
@@ -417,6 +421,9 @@
             }
 
             aggiornaVisibilitaPlaceholder('tbody-iscritti', 'empty-iscritti', 'tabella-iscritti');
+            
+            // Reinizializza le checkbox per il nuovo team
+            inizializzaCheckboxGestito();
         } catch (errore) {
             alert(errore.message);
         }
@@ -446,22 +453,12 @@
      * Inizializza le checkbox per gestire lo stato 'gestito' dei team.
      */
     function inizializzaCheckboxGestito() {
-        console.log('DEBUG: inizializzaCheckboxGestito() called');
-        console.log('DEBUG: baseUrl =', baseUrl);
-        console.log('DEBUG: garaId =', garaId);
-        
         const checkboxes = document.querySelectorAll('.checkbox-gestito');
-        console.log('DEBUG: checkboxes found:', checkboxes.length);
         
-        checkboxes.forEach((checkbox, index) => {
-            console.log(`DEBUG: checkbox ${index}:`, checkbox.dataset.iscrittoId, checkbox.checked);
-            
+        checkboxes.forEach(checkbox => {
             checkbox.addEventListener('change', function() {
                 const iscrittoId = this.dataset.iscrittoId;
                 const isGestito = this.checked ? 1 : 0;
-                
-                console.log('DEBUG: checkbox change - iscrittoId:', iscrittoId, 'is_gestito:', isGestito);
-                console.log('DEBUG: API URL:', `${baseUrl}/gare/apiAggiornaGestito/${garaId}`);
                 
                 // Mostra stato di caricamento
                 const originalDisabled = this.disabled;
@@ -478,15 +475,13 @@
                         is_gestito: isGestito
                     })
                 })
-                .then(response => {
-                    console.log('DEBUG: response status:', response.status);
-                    return response.json();
-                })
+                .then(response => response.json())
                 .then(data => {
-                    console.log('DEBUG: response data:', data);
                     if (data.status === 'success') {
                         // Successo: mostra notifica positiva
                         mostraNotifica(data.message, 'success');
+                        // Aggiorna dinamicamente il form dei piloti
+                        aggiornaFormPiloti();
                     } else {
                         // Errore: ripristina stato precedente
                         this.checked = !this.checked;
@@ -494,7 +489,7 @@
                     }
                 })
                 .catch(error => {
-                    console.error('DEBUG: AJAX error:', error);
+                    console.error('Errore AJAX:', error);
                     // Ripristina stato precedente in caso di errore di rete
                     this.checked = !this.checked;
                     mostraNotifica('Errore di connessione: ' + error.message, 'error');
@@ -510,6 +505,39 @@
     /**
      * Mostra una notifica temporanea all'utente.
      */
+    function aggiornaFormPiloti() {
+        // Ricarica dinamicamente le opzioni dei team nel form piloti
+        fetch(`${baseUrl}/gare/apiTeamGestiti/${garaId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const selectTeam = document.getElementById('team_id_pilota');
+                    if (selectTeam) {
+                        // Salva l'opzione selezionata
+                        const selectedValue = selectTeam.value;
+                        
+                        // Svuota e ripopola le opzioni
+                        selectTeam.innerHTML = '<option value="">-- Seleziona Team --</option>';
+                        
+                        data.data.forEach(team => {
+                            const option = document.createElement('option');
+                            option.value = team.team_id;
+                            option.textContent = team.nome_team;
+                            selectTeam.appendChild(option);
+                        });
+                        
+                        // Ripristina la selezione se esiste ancora
+                        if (selectedValue) {
+                            selectTeam.value = selectedValue;
+                        }
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Errore aggiornamento form piloti:', error);
+            });
+    }
+
     function mostraNotifica(messaggio, tipo = 'info') {
         // Rimuovi notifiche esistenti
         const notificaEsistente = document.querySelector('.notifica-flottante');

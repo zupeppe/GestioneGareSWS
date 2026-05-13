@@ -21,22 +21,31 @@ class StintMioTeam {
     }
 
     /**
-     * Ricalcola a cascata tutti i minuti di ingresso per la gara, considerando il tempo di pit stop.
+     * Ricalcola a cascata tutti i minuti di ingresso per la gara e team specifici, considerando il tempo di pit stop.
      * 
      * @param int $gara_id L'ID della gara
+     * @param int $team_id L'ID del team (se null, calcola per tutti i team)
      * @return void
      */
-    public function ricalcolaTimeline($gara_id) {
+    public function ricalcolaTimeline($gara_id, $team_id = null) {
         // Recupera i parametri della gara (es. tempo_minimo_pit)
         require_once __DIR__ . '/Gara.php';
         $garaModel = new Gara();
         $gara = $garaModel->ottieniPerId($gara_id);
         $tempo_pit = isset($gara['tempo_minimo_pit']) ? (int)$gara['tempo_minimo_pit'] : 0;
 
-        // Recupera tutti gli stint della gara ordinati per ID (cronologicamente)
-        $sql = "SELECT id, minuto_ingresso, durata_minuti FROM stint_mio_team WHERE gara_id = :gara_id ORDER BY id ASC";
+        // Recupera tutti gli stint della gara e team specifici ordinati per ID (cronologicamente)
+        $sql = "SELECT id, minuto_ingresso, durata_minuti FROM stint_mio_team WHERE gara_id = :gara_id";
+        $params = [':gara_id' => $gara_id];
+        
+        if ($team_id !== null) {
+            $sql .= " AND team_id = :team_id";
+            $params[':team_id'] = $team_id;
+        }
+        
+        $sql .= " ORDER BY id ASC";
         $stmt = $this->db->prepare($sql);
-        $stmt->execute([':gara_id' => $gara_id]);
+        $stmt->execute($params);
         $stints = $stmt->fetchAll();
 
         if (empty($stints)) return;
@@ -69,23 +78,23 @@ class StintMioTeam {
     }
 
     /**
-     * Inizia un nuovo stint per un pilota. 
-     * Calcola automaticamente il minuto di ingresso dall'ultimo stint.
+     * Inizia un nuovo stint per un pilota (imposta durata_minuti a NULL).
      * 
      * @param int $gara_id L'ID della gara
      * @param int $pilota_id L'ID del pilota
+     * @param int $team_id L'ID del team
      * @return bool
      */
-    public function iniziaStint($gara_id, $pilota_id) {
+    public function iniziaStint($gara_id, $pilota_id, $team_id) {
         require_once __DIR__ . '/Gara.php';
         $garaModel = new Gara();
         $gara = $garaModel->ottieniPerId($gara_id);
         $tempo_pit = isset($gara['tempo_minimo_pit']) ? (int)$gara['tempo_minimo_pit'] : 0;
 
-        // Trovo l'ultimo stint per prendere la sua uscita
-        $sqlUltimo = "SELECT minuto_ingresso, durata_minuti FROM stint_mio_team WHERE gara_id = :gara_id ORDER BY id DESC LIMIT 1";
+        // Trovo l'ultimo stint per prendere la sua uscita (solo per questo team)
+        $sqlUltimo = "SELECT minuto_ingresso, durata_minuti FROM stint_mio_team WHERE gara_id = :gara_id AND team_id = :team_id ORDER BY id DESC LIMIT 1";
         $stmtUltimo = $this->db->prepare($sqlUltimo);
-        $stmtUltimo->execute([':gara_id' => $gara_id]);
+        $stmtUltimo->execute([':gara_id' => $gara_id, ':team_id' => $team_id]);
         $ultimo = $stmtUltimo->fetch();
 
         $minuto_ingresso = 0;
@@ -96,11 +105,12 @@ class StintMioTeam {
             return false;
         }
 
-        $sql = "INSERT INTO stint_mio_team (gara_id, pilota_id, minuto_ingresso, durata_minuti) VALUES (:gara_id, :pilota_id, :minuto_ingresso, NULL)";
+        $sql = "INSERT INTO stint_mio_team (gara_id, pilota_id, team_id, minuto_ingresso, durata_minuti) VALUES (:gara_id, :pilota_id, :team_id, :minuto_ingresso, NULL)";
         $stmt = $this->db->prepare($sql);
         return $stmt->execute([
             ':gara_id' => $gara_id,
             ':pilota_id' => $pilota_id,
+            ':team_id' => $team_id,
             ':minuto_ingresso' => $minuto_ingresso
         ]);
     }
@@ -175,41 +185,56 @@ class StintMioTeam {
     }
 
     /**
-     * Recupera lo stint attualmente attivo per una gara (durata_minuti IS NULL).
+     * Recupera lo stint attualmente attivo (senza durata) per una gara e team specifici.
      * 
      * @param int $gara_id L'ID della gara
+     * @param int $team_id L'ID del team (se null, cerca tra tutti i team)
      * @return array|false
      */
-    public function ottieniStintAttivo($gara_id) {
+    public function ottieniStintAttivo($gara_id, $team_id = null) {
         $sql = "
             SELECT s.*, p.nome, p.cognome 
             FROM stint_mio_team s
             JOIN piloti_mio_team p ON s.pilota_id = p.id
             WHERE s.gara_id = :gara_id AND s.durata_minuti IS NULL
-            ORDER BY s.id DESC
-            LIMIT 1
         ";
+        $params = [':gara_id' => $gara_id];
+        
+        if ($team_id !== null) {
+            $sql .= " AND s.team_id = :team_id";
+            $params[':team_id'] = $team_id;
+        }
+        
+        $sql .= " ORDER BY s.id DESC LIMIT 1";
         $stmt = $this->db->prepare($sql);
-        $stmt->execute([':gara_id' => $gara_id]);
+        $stmt->execute($params);
         return $stmt->fetch();
     }
 
     /**
-     * Recupera tutti gli stint (chiusi e aperti) di una gara in ordine cronologico.
+     * Recupera tutti gli stint (chiusi e aperti) di una gara e team specifici in ordine cronologico.
      * 
      * @param int $gara_id
+     * @param int $team_id L'ID del team (se null, recupera tutti i team)
      * @return array
      */
-    public function ottieniTuttiStintGara($gara_id) {
+    public function ottieniTuttiStintGara($gara_id, $team_id = null) {
         $sql = "
             SELECT s.*, p.nome, p.cognome 
             FROM stint_mio_team s
             JOIN piloti_mio_team p ON s.pilota_id = p.id
             WHERE s.gara_id = :gara_id
-            ORDER BY s.id ASC
         ";
+        $params = [':gara_id' => $gara_id];
+        
+        if ($team_id !== null) {
+            $sql .= " AND s.team_id = :team_id";
+            $params[':team_id'] = $team_id;
+        }
+        
+        $sql .= " ORDER BY s.id ASC";
         $stmt = $this->db->prepare($sql);
-        $stmt->execute([':gara_id' => $gara_id]);
+        $stmt->execute($params);
         return $stmt->fetchAll();
     }
 
