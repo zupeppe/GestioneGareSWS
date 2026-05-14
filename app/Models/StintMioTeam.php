@@ -34,8 +34,8 @@ class StintMioTeam {
         $gara = $garaModel->ottieniPerId($gara_id);
         $tempo_pit = isset($gara['tempo_minimo_pit']) ? (int)$gara['tempo_minimo_pit'] : 0;
 
-        // Recupera tutti gli stint della gara e team specifici ordinati per ID (cronologicamente)
-        $sql = "SELECT id, minuto_ingresso, durata_minuti FROM stint_mio_team WHERE gara_id = :gara_id";
+        // Recupera tutti gli stint della gara e team specifici ordinati per ID (cronologicamente), escludendo cancellati
+        $sql = "SELECT id, minuto_ingresso, durata_minuti FROM stint_mio_team WHERE gara_id = :gara_id AND (cancellato = 0 OR cancellato IS NULL)";
         $params = [':gara_id' => $gara_id];
         
         if ($team_id !== null) {
@@ -91,8 +91,8 @@ class StintMioTeam {
         $gara = $garaModel->ottieniPerId($gara_id);
         $tempo_pit = isset($gara['tempo_minimo_pit']) ? (int)$gara['tempo_minimo_pit'] : 0;
 
-        // Trovo l'ultimo stint per prendere la sua uscita (solo per questo team)
-        $sqlUltimo = "SELECT minuto_ingresso, durata_minuti FROM stint_mio_team WHERE gara_id = :gara_id AND team_id = :team_id ORDER BY id DESC LIMIT 1";
+        // Trovo l'ultimo stint per prendere la sua uscita (solo per questo team, escludendo cancellati)
+        $sqlUltimo = "SELECT minuto_ingresso, durata_minuti FROM stint_mio_team WHERE gara_id = :gara_id AND team_id = :team_id AND (cancellato = 0 OR cancellato IS NULL) ORDER BY id DESC LIMIT 1";
         $stmtUltimo = $this->db->prepare($sqlUltimo);
         $stmtUltimo->execute([':gara_id' => $gara_id, ':team_id' => $team_id]);
         $ultimo = $stmtUltimo->fetch();
@@ -127,6 +127,13 @@ class StintMioTeam {
         require_once dirname(__DIR__) . '/Core/TimeHelper.php';
         $minuti = \App\Core\TimeHelper::daHHMMaMinuti($nuovo_ingresso_hhmm);
 
+        // Recupera team_id dello stint
+        $sqlTeam = "SELECT team_id FROM stint_mio_team WHERE id = :id";
+        $stmtTeam = $this->db->prepare($sqlTeam);
+        $stmtTeam->execute([':id' => $id]);
+        $stint = $stmtTeam->fetch();
+        $team_id = $stint ? $stint['team_id'] : null;
+
         $sql = "UPDATE stint_mio_team SET minuto_ingresso = :minuto_ingresso WHERE id = :id";
         $stmt = $this->db->prepare($sql);
         $result = $stmt->execute([
@@ -134,7 +141,7 @@ class StintMioTeam {
             ':minuto_ingresso' => $minuti
         ]);
 
-        $this->ricalcolaTimeline($gara_id);
+        $this->ricalcolaTimeline($gara_id, $team_id);
         return $result;
     }
 
@@ -150,6 +157,13 @@ class StintMioTeam {
         require_once dirname(__DIR__) . '/Core/TimeHelper.php';
         $minuti = \App\Core\TimeHelper::daHHMMaMinuti($durata_hhmm);
 
+        // Recupera team_id dello stint
+        $sqlTeam = "SELECT team_id FROM stint_mio_team WHERE id = :id";
+        $stmtTeam = $this->db->prepare($sqlTeam);
+        $stmtTeam->execute([':id' => $id]);
+        $stint = $stmtTeam->fetch();
+        $team_id = $stint ? $stint['team_id'] : null;
+
         $sql = "UPDATE stint_mio_team SET durata_minuti = :durata_minuti WHERE id = :id";
         $stmt = $this->db->prepare($sql);
         $result = $stmt->execute([
@@ -157,7 +171,7 @@ class StintMioTeam {
             ':durata_minuti' => $minuti
         ]);
 
-        $this->ricalcolaTimeline($gara_id);
+        $this->ricalcolaTimeline($gara_id, $team_id);
         return $result;
     }
 
@@ -173,6 +187,13 @@ class StintMioTeam {
         require_once dirname(__DIR__) . '/Core/TimeHelper.php';
         $minuti = \App\Core\TimeHelper::daHHMMaMinuti($nuova_durata_hhmm);
 
+        // Recupera team_id dello stint
+        $sqlTeam = "SELECT team_id FROM stint_mio_team WHERE id = :id";
+        $stmtTeam = $this->db->prepare($sqlTeam);
+        $stmtTeam->execute([':id' => $id]);
+        $stint = $stmtTeam->fetch();
+        $team_id = $stint ? $stint['team_id'] : null;
+
         $sql = "UPDATE stint_mio_team SET durata_minuti = :durata_minuti WHERE id = :id";
         $stmt = $this->db->prepare($sql);
         $result = $stmt->execute([
@@ -180,7 +201,7 @@ class StintMioTeam {
             ':durata_minuti' => $minuti
         ]);
 
-        $this->ricalcolaTimeline($gara_id);
+        $this->ricalcolaTimeline($gara_id, $team_id);
         return $result;
     }
 
@@ -196,7 +217,8 @@ class StintMioTeam {
             SELECT s.*, p.nome, p.cognome 
             FROM stint_mio_team s
             JOIN piloti_mio_team p ON s.pilota_id = p.id
-            WHERE s.gara_id = :gara_id AND s.durata_minuti IS NULL
+            WHERE s.gara_id = :gara_id AND s.durata_minuti IS NULL 
+            AND (s.cancellato = 0 OR s.cancellato IS NULL)
         ";
         $params = [':gara_id' => $gara_id];
         
@@ -212,6 +234,20 @@ class StintMioTeam {
     }
 
     /**
+     * Controlla se ci sono stint attivi per qualsiasi team della gara.
+     * 
+     * @param int $gara_id L'ID della gara
+     * @return bool True se ci sono stint attivi, false altrimenti
+     */
+    public function haStintAttivi($gara_id) {
+        $sql = "SELECT COUNT(*) as count FROM stint_mio_team WHERE gara_id = :gara_id AND durata_minuti IS NULL AND (cancellato = 0 OR cancellato IS NULL)";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':gara_id' => $gara_id]);
+        $result = $stmt->fetch();
+        return $result && $result['count'] > 0;
+    }
+
+    /**
      * Recupera tutti gli stint (chiusi e aperti) di una gara e team specifici in ordine cronologico.
      * 
      * @param int $gara_id
@@ -223,7 +259,8 @@ class StintMioTeam {
             SELECT s.*, p.nome, p.cognome 
             FROM stint_mio_team s
             JOIN piloti_mio_team p ON s.pilota_id = p.id
-            WHERE s.gara_id = :gara_id
+            WHERE s.gara_id = :gara_id 
+            AND (s.cancellato = 0 OR s.cancellato IS NULL)
         ";
         $params = [':gara_id' => $gara_id];
         
@@ -249,7 +286,8 @@ class StintMioTeam {
         $sql = "
             SELECT COALESCE(SUM(durata_minuti), 0) as tempo_totale
             FROM stint_mio_team 
-            WHERE gara_id = :gara_id AND pilota_id = :pilota_id AND durata_minuti IS NOT NULL
+            WHERE gara_id = :gara_id AND pilota_id = :pilota_id AND durata_minuti IS NOT NULL 
+            AND (cancellato = 0 OR cancellato IS NULL)
         ";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
@@ -286,19 +324,20 @@ class StintMioTeam {
     }
 
     /**
-     * Recupera tutti gli stint di una gara per un team specifico.
+     * Recupera tutti gli stint di una gara per un team specifico (esclusi cancellati).
      * 
      * @param int $gara_id ID della gara
      * @param int $team_id ID del team
      * @return array
      */
     public function ottieniTuttiStintGaraPerTeam($gara_id, $team_id) {
-        // Filtra gli stint per team specifico
+        // Filtra gli stint per team specifico, escludendo cancellati
         $sql = "
             SELECT s.*, p.nome, p.cognome
             FROM stint_mio_team s
             JOIN piloti_mio_team p ON s.pilota_id = p.id
             WHERE s.gara_id = :gara_id 
+            AND (s.cancellato = 0 OR s.cancellato IS NULL)
             AND EXISTS (
                 SELECT 1 FROM piloti_gara pg 
                 JOIN iscritti_gara i ON pg.gara_id = i.gara_id 
@@ -309,6 +348,47 @@ class StintMioTeam {
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':gara_id' => $gara_id, ':team_id' => $team_id]);
         return $stmt->fetchAll();
+    }
+
+    /**
+     * Recupera tutti gli stint cancellati di una gara per un team specifico.
+     * 
+     * @param int $gara_id ID della gara
+     * @param int $team_id ID del team
+     * @return array
+     */
+    public function ottieniStintCancellatiPerTeam($gara_id, $team_id) {
+        // Filtra gli stint cancellati per team specifico
+        $sql = "
+            SELECT s.*, p.nome, p.cognome
+            FROM stint_mio_team s
+            JOIN piloti_mio_team p ON s.pilota_id = p.id
+            WHERE s.gara_id = :gara_id 
+            AND s.cancellato = 1
+            AND s.team_id = :team_id
+            ORDER BY s.id ASC
+        ";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':gara_id' => $gara_id, ':team_id' => $team_id]);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Recupera uno stint specifico per ID.
+     *
+     * @param int $stint_id ID dello stint
+     * @return array|false
+     */
+    public function ottieniPerId($stint_id) {
+        $sql = "
+            SELECT s.*, p.nome, p.cognome
+            FROM stint_mio_team s
+            JOIN piloti_mio_team p ON s.pilota_id = p.id
+            WHERE s.id = :stint_id
+        ";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':stint_id' => $stint_id]);
+        return $stmt->fetch();
     }
 
     /**

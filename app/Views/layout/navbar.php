@@ -9,9 +9,6 @@
     ?>
     
     <?php if ($gara_id_param): ?>
-        <?php if ($is_muretto_team): ?>
-            <a href="<?php echo BASE_URL; ?>/muretto/multi/<?php echo $gara_id_param; ?>" style="color:#f9fafb; text-decoration:none; font-weight:bold; background:#374151; padding:6px 12px; border-radius:4px;">👥 Torna al Multi-Team</a>
-        <?php endif; ?>
         <a href="<?php echo BASE_URL; ?>/muretto/multi/<?php echo $gara_id_param; ?>" style="color:#f9fafb; text-decoration:none; font-weight:bold;">👥 Muretto Multi-Team</a>
         <a href="<?php echo BASE_URL; ?>/spotter/index/<?php echo $gara_id_param; ?>" style="color:#f9fafb; text-decoration:none; font-weight:bold;">🏁 Spotter Pit</a>
         <a href="<?php echo BASE_URL; ?>/gare/setup/<?php echo $gara_id_param; ?>" style="color:#f9fafb; text-decoration:none; font-weight:bold;">⚙️ Setup Gara</a>

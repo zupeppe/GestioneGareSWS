@@ -57,6 +57,7 @@ CREATE TABLE stint_mio_team (
     minuto_ingresso INT DEFAULT 0,
     durata_minuti INT,
     note TEXT,
+    cancellato TINYINT(1) DEFAULT 0 NOT NULL COMMENT '0=attivo, 1=cancellato soft',
     FOREIGN KEY (gara_id) REFERENCES gare(id) ON DELETE CASCADE,
     FOREIGN KEY (pilota_id) REFERENCES piloti_mio_team(id) ON DELETE CASCADE,
     FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE SET NULL,

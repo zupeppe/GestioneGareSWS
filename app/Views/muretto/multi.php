@@ -184,7 +184,7 @@
                                 <span class="pilot-time">Minuto <?php echo $data['stintAttivo']['minuto_ingresso']; ?></span>
                             </div>
                             <div style="text-align: center; margin-top: 10px;">
-                                <a href="<?php echo BASE_URL; ?>/muretto/termina/<?php echo $data['gara']['id']; ?>/<?php echo $data['stintAttivo']['id']; ?>" 
+                                <a href="<?php echo BASE_URL; ?>/muretto/termina/<?php echo $data['gara']['id']; ?>/<?php echo $data['stintAttivo']['id']; ?>?multi=1" 
                                    class="btn-mini btn-stop">Termina Stint</a>
                             </div>
                         <?php else: ?>
@@ -192,7 +192,7 @@
                                 Nessun pilota in pista
                             </div>
                             <div style="text-align: center; margin-top: 10px;">
-                                <a href="<?php echo BASE_URL; ?>/muretto/inizia/<?php echo $data['gara']['id']; ?>" 
+                                <a href="<?php echo BASE_URL; ?>/muretto/inizia/<?php echo $data['gara']['id']; ?>?multi=1" 
                                    class="btn-mini btn-start">Inizia Stint</a>
                             </div>
                         <?php endif; ?>
@@ -211,18 +211,20 @@
                     
                     <!-- Tempi Piloti -->
                     <div class="mini-section">
-                        <h4>Tempi Piloti</h4>
-                        <?php foreach ($data['roster'] as $pilota): ?>
-                            <div class="pilot-info">
-                                <span class="pilot-name"><?php echo htmlspecialchars($pilota['cognome'] . ' ' . $pilota['nome']); ?></span>
-                                <span class="pilot-time">
-                                    <?php 
-                                    $tempoTotale = $data['tempiTotaliPiloti'][$pilota['pilota_id']] ?? 0;
-                                    echo \App\Core\TimeHelper::daMinutiaHHMM($tempoTotale);
-                                    ?>
-                                </span>
-                            </div>
-                        <?php endforeach; ?>
+                        <div id="refresh-roster-piloti-<?php echo $data['team']['team_id']; ?>">
+                            <h4>Tempi Piloti</h4>
+                            <?php foreach ($data['roster'] as $pilota): ?>
+                                <div class="pilot-info">
+                                    <span class="pilot-name"><?php echo htmlspecialchars($pilota['cognome'] . ' ' . $pilota['nome']); ?></span>
+                                    <span class="pilot-time">
+                                        <?php 
+                                        $tempoTotale = $data['tempiTotaliPiloti'][$pilota['pilota_id']] ?? 0;
+                                        echo \App\Core\TimeHelper::daMinutiaHHMM($tempoTotale);
+                                        ?>
+                                    </span>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
                     </div>
                     
                     <!-- Azioni -->
@@ -265,7 +267,7 @@
                                     <span class="pilot-time">Minuto ${team.stintAttivo.minuto_ingresso}</span>
                                 </div>
                                 <div style="text-align: center; margin-top: 10px;">
-                                    <a href="<?php echo BASE_URL; ?>/muretto/termina/<?php echo $gara['id']; ?>/${team.stintAttivo.id}" 
+                                    <a href="<?php echo BASE_URL; ?>/muretto/termina/<?php echo $gara['id']; ?>/${team.stintAttivo.id}?multi=1" 
                                        class="btn-mini btn-stop">Termina Stint</a>
                                 </div>
                             `;
@@ -276,7 +278,7 @@
                                     Nessun pilota in pista
                                 </div>
                                 <div style="text-align: center; margin-top: 10px;">
-                                    <a href="<?php echo BASE_URL; ?>/muretto/inizia/<?php echo $gara['id']; ?>" 
+                                    <a href="<?php echo BASE_URL; ?>/muretto/inizia/<?php echo $gara['id']; ?>?multi=1" 
                                        class="btn-mini btn-start">Inizia Stint</a>
                                 </div>
                             `;
@@ -297,9 +299,9 @@
                         `;
                     }
 
-                    // Aggiorna tempi piloti
-                    const tempiSection = column.querySelectorAll('.mini-section')[2];
-                    if (tempiSection && team.roster && team.tempiTotaliPiloti) {
+                    // Aggiorna tempi piloti usando ID dinamico
+                    const rosterDiv = column.querySelector(`#refresh-roster-piloti-${team.team_id}`);
+                    if (rosterDiv && team.roster && team.tempiTotaliPiloti) {
                         let tempiHtml = '<h4>Tempi Piloti</h4>';
                         team.roster.forEach(pilota => {
                             const tempoTotale = team.tempiTotaliPiloti[pilota.pilota_id] || 0;
@@ -313,7 +315,7 @@
                                 </div>
                             `;
                         });
-                        tempiSection.innerHTML = tempiHtml;
+                        rosterDiv.innerHTML = tempiHtml;
                     }
                 }
             });

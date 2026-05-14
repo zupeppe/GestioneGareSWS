@@ -6,6 +6,7 @@ use App\Models\Team;
 use App\Models\IscrittoGara;
 use App\Models\FilePit;
 use App\Models\PilotiGara;
+use App\Models\StintMioTeam;
 
 /**
  * Classe GareController
@@ -19,8 +20,16 @@ class GareController {
      * @return bool
      */
     private function eRichiestaAjax() {
-        return isset($_SERVER['HTTP_X_REQUESTED_WITH'])
-            && strtolower((string)$_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+        return (
+            isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+            strtolower((string)$_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest'
+        ) || (
+            isset($_SERVER['CONTENT_TYPE']) &&
+            strpos(strtolower($_SERVER['CONTENT_TYPE']), 'application/json') !== false
+        ) || (
+            isset($_SERVER['HTTP_ACCEPT']) &&
+            strpos(strtolower($_SERVER['HTTP_ACCEPT']), 'application/json') !== false
+        );
     }
 
     /**
@@ -91,6 +100,10 @@ class GareController {
 
         // Recupera i team gestiti per il form piloti
         $teamGestiti = $iscrittoModel->ottieniGestitiPerGara($gara_id);
+
+        // Controlla se ci sono stint attivi (blocco di sicurezza)
+        $stintModel = new StintMioTeam();
+        $haStintAttivi = $stintModel->haStintAttivi($gara_id);
 
         require_once BASE_PATH . '/app/Views/gare/setup.php';
     }
@@ -636,5 +649,55 @@ class GareController {
         header('Content-Type: application/json');
         echo json_encode(['status' => 'success', 'data' => $teamGestiti]);
         exit;
+    }
+
+    /**
+     * API endpoint per restituire l'HTML del roster per team.
+     */
+    public function apiRosterTeam($gara_id) {
+        // Permetti sempre le richieste API (semplificato per debug)
+        header('Content-Type: application/json');
+
+        try {
+            // Recupera i dati necessari
+            $pilotiGaraModel = new PilotiGara();
+            $pilotiRoster = $pilotiGaraModel->ottieniPerGara($gara_id);
+            
+            $iscrittoModel = new IscrittoGara();
+            $teamGestiti = $iscrittoModel->ottieniGestitiPerGara($gara_id);
+
+            // Genera l'HTML del roster
+            ob_start();
+            include BASE_PATH . '/app/Views/gare/_roster_team.php';
+            $html = ob_get_clean();
+
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'success', 'html' => $html]);
+            exit;
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'Errore: ' . $e->getMessage()]);
+            exit;
+        }
+    }
+
+    /**
+     * API endpoint per restituire i piloti disponibili.
+     */
+    public function apiPilotiDisponibili($gara_id) {
+        // Permetti sempre le richieste API (semplificato per debug)
+        header('Content-Type: application/json');
+
+        try {
+            $pilotiGaraModel = new PilotiGara();
+            $pilotiDisponibili = $pilotiGaraModel->ottieniNonIscritti($gara_id);
+
+            echo json_encode(['status' => 'success', 'data' => $pilotiDisponibili]);
+            exit;
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'Errore: ' . $e->getMessage()]);
+            exit;
+        }
     }
 }

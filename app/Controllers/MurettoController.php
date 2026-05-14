@@ -173,6 +173,11 @@ class MurettoController {
         
         $stintAttivo = $stintModel->ottieniStintAttivo($gara_id, $team_id);
         $tuttiStint = $stintModel->ottieniTuttiStintGara($gara_id, $team_id);
+        // Recupera gli stint cancellati solo se c'è un team specifico
+        $stintCancellati = [];
+        if ($team_id) {
+            $stintCancellati = $stintModel->ottieniStintCancellatiPerTeam($gara_id, $team_id);
+        }
 
         // Calcoliamo dove siamo arrivati col tempo
         $minutoUltimaUscita = 0;
@@ -248,6 +253,21 @@ class MurettoController {
             ];
         }
 
+        // Passa anche gli stint cancellati alla vista
+        $data = [
+            'gara' => $gara,
+            'teamSelezionato' => $teamSelezionato,
+            'roster' => $roster,
+            'stintAttivo' => $stintAttivo,
+            'tuttiStint' => $tuttiStint,
+            'stintCancellati' => $stintCancellati,
+            'strategia' => $strategia,
+            'tempiTotaliPiloti' => $tempiTotaliPiloti,
+            'tempoResiduoHHMM' => $tempoResiduoHHMM,
+            'kart_in_fila' => $kart_in_fila,
+            'avversari_kart' => $avversari_kart
+        ];
+
         require_once BASE_PATH . '/app/Views/muretto/index.php';
     }
 
@@ -302,6 +322,7 @@ class MurettoController {
         // Filtra gli stint per questo team specifico
         $stintAttivo = $stintModel->ottieniStintAttivo($gara_id, $team['team_id']);
         $tuttiStint = $stintModel->ottieniTuttiStintGara($gara_id, $team['team_id']);
+        $stintCancellati = $stintModel->ottieniStintCancellatiPerTeam($gara_id, $team['team_id']);
 
         // Calcoliamo dove siamo arrivati col tempo
         $minutoUltimaUscita = 0;
@@ -346,6 +367,7 @@ class MurettoController {
             'roster' => $roster,
             'stintAttivo' => $stintAttivo,
             'tuttiStint' => $tuttiStint,
+            'stintCancellati' => $stintCancellati,
             'tempoResiduoHHMM' => $tempoResiduoHHMM,
             'strategia' => $strategia,
             'tempiTotaliPiloti' => $tempiTotaliPiloti,
@@ -359,12 +381,10 @@ class MurettoController {
 
             if ($pilota_id) {
                 $pilotiGaraModel = new PilotiGara();
-                $roster = $pilotiGaraModel->ottieniPerGara($gara_id);
-                
                 $stintModel = new StintMioTeam();
                 
-                // Ottieni team_id dal pilota selezionato
-                $team_id = null;
+                // Ottieni team_id dal POST o dal pilota selezionato
+                $team_id = $_POST['team_id'] ?? null;
                 $pilotaTrovato = false;
                 
                 // Verifica se team_id esiste nel database
@@ -377,33 +397,37 @@ class MurettoController {
                 }
                 
                 if ($hasTeamId) {
-                    // Database con team_id - cerca il team del pilota
-                    foreach ($roster as $pilota) {
-                        if ($pilota['pilota_id'] == $pilota_id) {
-                            if ($pilota['team_id']) {
-                                // Pilota ha già team_id
+                    // Database con team_id - verifica il pilota nel team specifico
+                    if ($team_id) {
+                        // team_id passato dal POST - cerca solo piloti di quel team
+                        $roster = $pilotiGaraModel->ottieniPerGaraETeam($gara_id, $team_id);
+                        
+                        foreach ($roster as $pilota) {
+                            if ($pilota['pilota_id'] == $pilota_id) {
+                                $pilotaTrovato = true;
+                                break;
+                            }
+                        }
+                        
+                        if (!$pilotaTrovato) {
+                            $_SESSION['error'] = "Il pilota selezionato non è associato a questo team.";
+                        }
+                    } else {
+                        // team_id non passato dal POST - cerca tra tutti i piloti della gara
+                        $roster = $pilotiGaraModel->ottieniPerGara($gara_id);
+                        
+                        foreach ($roster as $pilota) {
+                            if ($pilota['pilota_id'] == $pilota_id && $pilota['team_id']) {
+                                // Pilota ha già team_id - usa quello
                                 $team_id = $pilota['team_id'];
                                 $pilotaTrovato = true;
                                 break;
-                            } else {
-                                // Pilota con team_id NULL - assegna al primo team gestito
-                                $iscrittoModel = new IscrittoGara();
-                                $teamGestiti = $iscrittoModel->ottieniGestitiPerGara($gara_id);
-                                
-                                if (!empty($teamGestiti)) {
-                                    $team_id = $teamGestiti[0]['team_id'];
-                                    $pilotaTrovato = true;
-                                    
-                                    // Aggiorna il pilota con il team_id
-                                    $pilotiGaraModel->aggiornaTeamId($pilota['id'], $team_id);
-                                    break;
-                                }
                             }
                         }
-                    }
-                    
-                    if (!$team_id) {
-                        $_SESSION['error'] = "Il pilota selezionato non è associato a un team gestito.";
+                        
+                        if (!$team_id) {
+                            $_SESSION['error'] = "Il pilota selezionato non è associato a un team gestito. Verifica il setup della gara.";
+                        }
                     }
                 } else {
                     // Database senza team_id - usa il primo team gestito disponibile
@@ -428,7 +452,13 @@ class MurettoController {
                 $_SESSION['error'] = "Seleziona un pilota per iniziare lo stint.";
             }
             
-            header('Location: ' . BASE_URL . '/muretto/index/' . $gara_id);
+            // Redirect dinamico per multi-team
+            $is_multi = isset($_GET['multi']) || isset($_POST['multi']);
+            if ($is_multi) {
+                header('Location: ' . BASE_URL . '/muretto/multi/' . $gara_id);
+            } else {
+                header('Location: ' . BASE_URL . '/muretto/index/' . $gara_id . ($team_id ? "/$team_id" : ""));
+            }
             exit;
         }
         header('Location: ' . BASE_URL . '/home/index');
@@ -439,6 +469,9 @@ class MurettoController {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stint_id = $_POST['stint_id'] ?? null;
             $durata = $_POST['durata'] ?? null;
+            
+            // Ottieni team_id dal POST
+            $team_id = $_POST['team_id'] ?? null;
 
             if ($stint_id && $durata) {
                 if (!$this->validaFormatoTempo($durata)) {
@@ -452,7 +485,13 @@ class MurettoController {
                 $_SESSION['error'] = "Durata mancante.";
             }
             
-            header('Location: ' . BASE_URL . '/muretto/index/' . $gara_id);
+            // Redirect dinamico per multi-team
+            $is_multi = isset($_GET['multi']) || isset($_POST['multi']);
+            if ($is_multi) {
+                header('Location: ' . BASE_URL . '/muretto/multi/' . $gara_id);
+            } else {
+                header('Location: ' . BASE_URL . '/muretto/index/' . $gara_id . ($team_id ? "/$team_id" : ""));
+            }
             exit;
         }
         header('Location: ' . BASE_URL . '/home/index');
@@ -470,7 +509,13 @@ class MurettoController {
         $stint_id = (int)$stint_id;
         if ($stint_id <= 0) {
             $_SESSION['error'] = "Stint non valido.";
-            header('Location: ' . BASE_URL . '/muretto/index/' . $gara_id);
+            // Redirect dinamico per multi-team
+            $is_multi = isset($_GET['multi']) || isset($_POST['multi']);
+            if ($is_multi) {
+                header('Location: ' . BASE_URL . '/muretto/multi/' . $gara_id);
+            } else {
+                header('Location: ' . BASE_URL . '/muretto/index/' . $gara_id);
+            }
             exit;
         }
 
@@ -483,7 +528,13 @@ class MurettoController {
             $_SESSION['error'] = "Impossibile annullare lo stint (potrebbe non essere piu attivo).";
         }
 
-        header('Location: ' . BASE_URL . '/muretto/index/' . $gara_id);
+        // Redirect dinamico per multi-team
+        $is_multi = isset($_GET['multi']) || isset($_POST['multi']);
+        if ($is_multi) {
+            header('Location: ' . BASE_URL . '/muretto/multi/' . $gara_id);
+        } else {
+            header('Location: ' . BASE_URL . '/muretto/index/' . $gara_id);
+        }
         exit;
     }
 
@@ -491,6 +542,9 @@ class MurettoController {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stint_id = $_POST['stint_id'] ?? null;
             $durata = $_POST['durata'] ?? null;
+            
+            // Ottieni team_id dal POST
+            $team_id = $_POST['team_id'] ?? null;
 
             if ($stint_id && $durata) {
                 if (!$this->validaFormatoTempo($durata)) {
@@ -504,7 +558,13 @@ class MurettoController {
                 $_SESSION['error'] = "Dati mancanti.";
             }
             
-            header('Location: ' . BASE_URL . '/muretto/index/' . $gara_id);
+            // Redirect dinamico per multi-team
+            $is_multi = isset($_GET['multi']) || isset($_POST['multi']);
+            if ($is_multi) {
+                header('Location: ' . BASE_URL . '/muretto/multi/' . $gara_id);
+            } else {
+                header('Location: ' . BASE_URL . '/muretto/index/' . $gara_id . ($team_id ? "/$team_id" : ""));
+            }
             exit;
         }
         header('Location: ' . BASE_URL . '/home/index');
@@ -515,6 +575,9 @@ class MurettoController {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stint_id = $_POST['stint_id'] ?? null;
             $ingresso = $_POST['minuto_ingresso_hhmm'] ?? null;
+            
+            // Ottieni team_id dal POST
+            $team_id = $_POST['team_id'] ?? null;
 
             if ($stint_id && $ingresso !== null && $ingresso !== '') {
                 if (!$this->validaFormatoTempo($ingresso)) {
@@ -528,7 +591,13 @@ class MurettoController {
                 $_SESSION['error'] = "Ingresso mancante.";
             }
             
-            header('Location: ' . BASE_URL . '/muretto/index/' . $gara_id);
+            // Redirect dinamico per multi-team
+            $is_multi = isset($_GET['multi']) || isset($_POST['multi']);
+            if ($is_multi) {
+                header('Location: ' . BASE_URL . '/muretto/multi/' . $gara_id);
+            } else {
+                header('Location: ' . BASE_URL . '/muretto/index/' . $gara_id . ($team_id ? "/$team_id" : ""));
+            }
             exit;
         }
         header('Location: ' . BASE_URL . '/home/index');
@@ -640,6 +709,110 @@ class MurettoController {
 
         header('Content-Type: application/json');
         echo json_encode(['status' => 'success', 'data' => $multiData]);
+        exit;
+    }
+
+    /**
+     * Cancella uno stint (soft delete) con conferma.
+     * 
+     * @param int $stint_id ID dello stint da cancellare
+     * @param int $gara_id ID della gara
+     * @param int|null $team_id ID del team (opzionale)
+     * @return void
+     */
+    public function cancellaStint($stint_id, $gara_id, $team_id = null) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ' . BASE_URL . '/muretto/index/' . $gara_id . ($team_id ? "/$team_id" : ""));
+            exit;
+        }
+
+        // Verifica conferma
+        $conferma = $_POST['conferma'] ?? '';
+        if ($conferma !== 'CONFERMA') {
+            $_SESSION['error'] = "Conferma non valida. Per cancellare uno stint, digitare esattamente 'CONFERMA'.";
+            header('Location: ' . BASE_URL . '/muretto/index/' . $gara_id . ($team_id ? "/$team_id" : ""));
+            exit;
+        }
+
+        $stintModel = new StintMioTeam();
+        $stint = $stintModel->ottieniPerId($stint_id);
+
+        if (!$stint || $stint['gara_id'] != $gara_id || ($team_id && $stint['team_id'] != $team_id)) {
+            $_SESSION['error'] = "Stint non valido o non appartiene a questa gara/team.";
+            header('Location: ' . BASE_URL . '/muretto/index/' . $gara_id . ($team_id ? "/$team_id" : ""));
+            exit;
+        }
+
+        // Verifica che lo stint non sia attivo
+        if ($stint['durata_minuti'] === null) {
+            $_SESSION['error'] = "Impossibile cancellare uno stint attualmente in corso.";
+            header('Location: ' . BASE_URL . '/muretto/index/' . $gara_id . ($team_id ? "/$team_id" : ""));
+            exit;
+        }
+
+        try {
+            // Soft delete: marca come cancellato
+            $sql = "UPDATE stint_mio_team SET cancellato = 1 WHERE id = :id";
+            $stmt = Database::getIstanza()->getConnessione()->prepare($sql);
+            $stmt->execute([':id' => $stint_id]);
+
+            // Ricalcola la timeline per mantenere la coerenza
+            $stintModel->ricalcolaTimeline($gara_id, $team_id);
+
+            $_SESSION['success'] = "Stint cancellato con successo. Puoi ripristinarlo utilizzando l'apposita funzione.";
+        } catch (Exception $e) {
+            $_SESSION['error'] = "Errore durante la cancellazione dello stint: " . $e->getMessage();
+        }
+
+        header('Location: ' . BASE_URL . '/muretto/index/' . $gara_id . ($team_id ? "/$team_id" : ""));
+        exit;
+    }
+
+    /**
+     * Ripristina uno stint precedentemente cancellato.
+     * 
+     * @param int $stint_id ID dello stint da ripristinare
+     * @param int $gara_id ID della gara
+     * @param int|null $team_id ID del team (opzionale)
+     * @return void
+     */
+    public function ripristinaStint($stint_id, $gara_id, $team_id = null) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ' . BASE_URL . '/muretto/index/' . $gara_id . ($team_id ? "/$team_id" : ""));
+            exit;
+        }
+
+        $stintModel = new StintMioTeam();
+        $stint = $stintModel->ottieniPerId($stint_id);
+
+        if (!$stint || $stint['gara_id'] != $gara_id || ($team_id && $stint['team_id'] != $team_id)) {
+            $_SESSION['error'] = "Stint non valido o non appartiene a questa gara/team.";
+            header('Location: ' . BASE_URL . '/muretto/index/' . $gara_id . ($team_id ? "/$team_id" : ""));
+            exit;
+        }
+
+        // Verifica che lo stint sia effettivamente cancellato
+        if (!isset($stint['cancellato']) || $stint['cancellato'] != 1) {
+            $_SESSION['error'] = "Questo stint non è stato cancellato.";
+            header('Location: ' . BASE_URL . '/muretto/index/' . $gara_id . ($team_id ? "/$team_id" : ""));
+            exit;
+        }
+
+        try {
+            // Ripristina lo stint
+            $sql = "UPDATE stint_mio_team SET cancellato = 0 WHERE id = :id";
+            $stmt = Database::getIstanza()->getConnessione()->prepare($sql);
+            $stmt->execute([':id' => $stint_id]);
+
+            // Ricalcola la timeline per mantenere la coerenza
+            $stintModel->ricalcolaTimeline($gara_id, $team_id);
+
+            $_SESSION['success'] = "Stint ripristinato con successo.";
+        } catch (Exception $e) {
+            $_SESSION['error'] = "Errore durante il ripristino dello stint: " . $e->getMessage();
+        }
+
+        header('Location: ' . BASE_URL . '/muretto/index/' . $gara_id . ($team_id ? "/$team_id" : ""));
         exit;
     }
 }

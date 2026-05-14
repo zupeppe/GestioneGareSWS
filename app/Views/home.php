@@ -166,7 +166,7 @@
         }
         
         .form-group input {
-            width: 100%;
+            width: 90%;
             padding: 12px;
             border: 2px solid #e9ecef;
             border-radius: 6px;

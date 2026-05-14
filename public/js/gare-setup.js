@@ -182,6 +182,7 @@
             ...options,
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
                 ...(options && options.headers ? options.headers : {})
             }
         });
@@ -260,49 +261,50 @@
     }
 
     async function eseguiAggiungiPilotaAlRoster() {
+        console.log('Inizio aggiunta pilota al roster');
         if (!formAggiungiPilota) {
+            console.error('Form aggiungi pilota non trovato');
             return;
         }
         const formData = new FormData(formAggiungiPilota);
+        console.log('FormData:', Object.fromEntries(formData));
 
         try {
+            console.log('Invio richiesta a:', formAggiungiPilota.action);
             const response = await fetchAjax(formAggiungiPilota.action, {
                 method: 'POST',
                 body: formData
             });
 
+            console.log('Response aggiunta pilota:', response);
             const pilota = response.data;
             if (!pilota || !pilota.id) {
+                console.error('Dati pilota non validi:', pilota);
                 return;
             }
 
-            const tbody = document.getElementById('tbody-piloti-roster');
-            if (tbody) {
-                const tr = document.createElement('tr');
-                tr.id = `pilota-row-${pilota.id}`;
-                tr.setAttribute('data-associazione-id', pilota.id);
-                tr.setAttribute('data-pilota-id', pilota.pilota_id);
-                tr.setAttribute('data-nome-pilota', `${pilota.cognome} ${pilota.nome}`);
-                tr.innerHTML = `
-                    <td>${escapeHtml(pilota.cognome)} ${escapeHtml(pilota.nome)}</td>
-                    <td>
-                        <a href="${baseUrl}/gare/rimuoviPilotaGara/${pilota.id}/${garaId}" class="btn btn-danger js-rimuovi-pilota" style="text-decoration:none; padding:5px 10px; font-size:0.9em; border-radius:4px;">Rimuovi</a>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            }
+            console.log('Pilota aggiunto con successo:', pilota);
 
+            // Aggiorna dinamicamente le tabelle dei team
+            console.log('Aggiornamento roster team...');
+            ricaricaRosterTeam();
+
+            // Rimuovi il pilota dal select
             const selectPilota = document.getElementById('pilota_id');
             if (selectPilota) {
                 const optionToRemove = selectPilota.querySelector(`option[value="${String(pilota.pilota_id)}"]`);
                 if (optionToRemove) {
                     optionToRemove.remove();
+                    console.log('Pilota rimosso dal select');
                 }
                 selectPilota.value = '';
             }
 
-            aggiornaVisibilitaPlaceholder('tbody-piloti-roster', 'empty-piloti-roster', 'tabella-piloti-roster');
+            // Resetta il form
+            formAggiungiPilota.reset();
+            console.log('Form resettato');
         } catch (errore) {
+            console.error('Errore aggiunta pilota:', errore);
             alert(errore.message);
         }
     }
@@ -316,6 +318,68 @@
         if (btn) {
             btn.addEventListener('click', eseguiAggiungiPilotaAlRoster);
         }
+
+        // Event delegation per la rimozione dei piloti
+        document.addEventListener('click', function(e) {
+            if (e.target && e.target.classList.contains('js-rimuovi-pilota')) {
+                e.preventDefault();
+                const url = e.target.getAttribute('data-url');
+                if (url) {
+                    rimuoviPilotaDinamico(url);
+                }
+            }
+        });
+    }
+
+    async function rimuoviPilotaDinamico(url) {
+        console.log('Rimozione pilota URL:', url);
+        try {
+            const response = await fetchAjax(url, {
+                method: 'GET'
+            });
+            console.log('Rimozione pilota response:', response);
+
+            // Aggiorna dinamicamente le tabelle dei team
+            ricaricaRosterTeam();
+
+            // Aggiorna anche il select dei piloti disponibili
+            aggiornaSelectPilotiDisponibili();
+        } catch (errore) {
+            console.error('Errore rimozione pilota:', errore);
+            alert(errore.message);
+        }
+    }
+
+    function aggiornaSelectPilotiDisponibili() {
+        fetch(`${baseUrl}/gare/apiPilotiDisponibili/${garaId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const selectPilota = document.getElementById('pilota_id');
+                    if (selectPilota) {
+                        // Salva l'opzione selezionata
+                        const selectedValue = selectPilota.value;
+                        
+                        // Svuota e ripopola le opzioni
+                        selectPilota.innerHTML = '<option value="">-- Seleziona Pilota --</option>';
+                        
+                        data.data.forEach(pilota => {
+                            const option = document.createElement('option');
+                            option.value = pilota.id;
+                            option.textContent = `${pilota.cognome} ${pilota.nome}`;
+                            selectPilota.appendChild(option);
+                        });
+                        
+                        // Ripristina la selezione se esiste ancora
+                        if (selectedValue) {
+                            selectPilota.value = selectedValue;
+                        }
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Errore aggiornamento select piloti:', error);
+            });
     }
 
     async function eseguiAggiungiFilaPit() {
@@ -500,6 +564,35 @@
                 });
             });
         });
+    }
+
+    /**
+     * Ricarica dinamicamente la sezione del roster per team.
+     */
+    function ricaricaRosterTeam() {
+        console.log('Caricamento roster team per gara:', garaId);
+        fetch(`${baseUrl}/gare/apiRosterTeam/${garaId}`)
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Response data:', data);
+                if (data.status === 'success') {
+                    const rosterContainer = document.getElementById('roster-per-team');
+                    if (rosterContainer) {
+                        rosterContainer.innerHTML = data.html;
+                        console.log('Roster aggiornato con successo');
+                    } else {
+                        console.error('Container roster-per-team non trovato');
+                    }
+                } else {
+                    console.error('Errore nel response:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Errore ricarica roster team:', error);
+            });
     }
 
     /**

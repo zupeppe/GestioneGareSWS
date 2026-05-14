@@ -44,9 +44,54 @@
             </div>
         <?php endif; ?>
 
-        <div class="grid-container">
+        <?php if ($haStintAttivi): ?>
+            <div style="background: #fff3cd; border: 2px solid #ffeaa7; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+                <h3 style="color: #856404; margin: 0 0 10px 0;">⚠️ ATTENZIONE: Gara in Corso</h3>
+                <p style="color: #856404; margin: 0 0 15px 0;">
+                    Ci sono stint attivi in questa gara. Per motivi di sicurezza, le modifiche al setup sono bloccate per evitare situazioni spiacevoli.
+                </p>
+                <div style="background: #f8d7da; border: 1px solid #f5c6cb; padding: 10px; border-radius: 4px; margin-bottom: 15px;">
+                    <p style="color: #721c24; margin: 0; font-weight: bold;">
+                        🛡️ Protezione Attiva: Non è possibile modificare il roster piloti, i team o altri parametri mentre la gara è in corso.
+                    </p>
+                </div>
+                <script>
+                // Funzione per sbloccare con conferma
+                function sbloccaSetup() {
+                    if (confirm('⚠️ CONFERMA CRITICA\n\nStai per sbloccare il setup della gara con stint attivi.\n\nQuesta operazione è RISCHIOSA e può causare:\n• Corruzione dei dati della gara\n• Perdita di informazioni sugli stint\n• Problemi nella timeline\n\nSei ASSOLUTAMENTE sicuro di voler continuare?\n\nConsigliato: NO - Termina prima gli stint attivi.')) {
+                        if (confirm('🚨 ULTIMO AVVISO\n\nHai scelto di continuare nonostante i rischi.\n\nQuesta azione potrebbe rendere la gara instabile.\n\nVuoi davvero procedere?')) {
+                            // Rimuovi il blocco
+                            const bloccoDiv = document.querySelector('.setup-bloccato');
+                            if (bloccoDiv) {
+                                bloccoDiv.style.display = 'none';
+                            }
+                            // Abilita tutti i form
+                            const forms = document.querySelectorAll('form');
+                            forms.forEach(form => {
+                                const inputs = form.querySelectorAll('input, select, button, textarea');
+                                inputs.forEach(input => {
+                                    input.disabled = false;
+                                    input.style.opacity = '1';
+                                });
+                            });
+                            // Rimuovi l'avviso
+                            const avviso = document.querySelector('.avviso-gara-corso');
+                            if (avviso) {
+                                avviso.style.display = 'none';
+                            }
+                        }
+                    }
+                }
+                </script>
+                <button type="button" onclick="sbloccaSetup()" style="background: #dc3545; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                    🚨 Sblocca Setup (Rischioso)
+                </button>
+            </div>
+        <?php endif; ?>
+
+        <div class="grid-container <?php echo $haStintAttivi ? 'setup-bloccato' : ''; ?>">
             <!-- SEZIONE 1: Parametri Gara -->
-            <div class="form-section">
+            <div class="form-section avviso-gara-corso" style="<?php echo $haStintAttivi ? 'opacity: 0.6; pointer-events: none;' : ''; ?>">
                 <h2>1. Parametri Gara</h2>
                 <form action="<?php echo BASE_URL; ?>/gare/aggiornaParametri" method="POST" id="form-parametri-gara">
                     <input type="hidden" name="gara_id" value="<?php echo $gara['id']; ?>">
@@ -96,7 +141,7 @@
             </div>
 
             <!-- SEZIONE 2: Roster Piloti Team -->
-            <div class="form-section">
+            <div class="form-section avviso-gara-corso" style="<?php echo $haStintAttivi ? 'opacity: 0.6; pointer-events: none;' : ''; ?>">
                 <h2>2. Roster Piloti Team</h2>
                 <form action="<?php echo BASE_URL; ?>/gare/aggiungiPilotaGara" method="POST" id="form-aggiungi-pilota">
                     <input type="hidden" name="gara_id" value="<?php echo $gara['id']; ?>">
@@ -111,10 +156,11 @@
                                     </option>
                                 <?php endforeach; ?>
                             </select>
+                            <div class="autosave-status" id="autosave-piloti-status"></div>
                         </div>
-                        <div style="flex-grow: 1;">
-                            <label for="team_id_pilota">Team:</label>
-                            <select id="team_id_pilota" name="team_id" required>
+                        <div>
+                            <label for="team_id">Team:</label>
+                            <select id="team_id" name="team_id" required>
                                 <option value="">-- Seleziona Team --</option>
                                 <?php foreach ($teamGestiti as $team): ?>
                                     <option value="<?php echo $team['team_id']; ?>">
@@ -122,6 +168,7 @@
                                     </option>
                                 <?php endforeach; ?>
                             </select>
+                            <div class="autosave-status" id="autosave-team-status"></div>
                         </div>
                         <div>
                             <button type="button" class="btn btn-secondary" onclick="openModal('modal-nuovo-pilota')" style="background:#6c757d; height: 35px; line-height: 15px;">+ Nuovo</button>
@@ -130,24 +177,14 @@
                     <button type="button" class="btn" id="btn-aggiungi-roster-pilota">Aggiungi pilota</button>
                 </form>
 
-                <table style="margin-top: 10px; <?php echo empty($pilotiRoster) ? 'display:none;' : ''; ?>" id="tabella-piloti-roster">
-                    <thead><tr><th>Pilota</th><th>Azioni</th></tr></thead>
-                    <tbody id="tbody-piloti-roster">
-                        <?php foreach ($pilotiRoster as $pr): ?>
-                            <tr id="pilota-row-<?php echo (int)$pr['id']; ?>" data-associazione-id="<?php echo (int)$pr['id']; ?>" data-pilota-id="<?php echo (int)$pr['pilota_id']; ?>" data-nome-pilota="<?php echo htmlspecialchars($pr['cognome'] . ' ' . $pr['nome'], ENT_QUOTES, 'UTF-8'); ?>">
-                                <td><?php echo htmlspecialchars($pr['cognome'] . ' ' . $pr['nome']); ?></td>
-                                <td>
-                                    <a href="<?php echo BASE_URL; ?>/gare/rimuoviPilotaGara/<?php echo $pr['id']; ?>/<?php echo $gara['id']; ?>" class="btn btn-danger js-rimuovi-pilota" style="text-decoration:none; padding:5px 10px; font-size:0.9em; border-radius:4px;">Rimuovi</a>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-                <p style="font-size: 0.9em; margin-top: 10px; <?php echo !empty($pilotiRoster) ? 'display:none;' : ''; ?>" id="empty-piloti-roster">Nessun pilota nel roster.</p>
+                <!-- Visualizzazione Piloti per Team -->
+                <div id="roster-per-team" style="margin-top: 20px;">
+                    <?php include BASE_PATH . '/app/Views/gare/_roster_team.php'; ?>
+                </div>
             </div>
 
             <!-- SEZIONE 3: Configurazione Box -->
-            <div class="form-section">
+            <div class="form-section avviso-gara-corso" style="<?php echo $haStintAttivi ? 'opacity: 0.6; pointer-events: none;' : ''; ?>">
                 <h2>3. Configurazione Box</h2>
                 <form action="<?php echo BASE_URL; ?>/gare/aggiungiFilaPit" method="POST" id="form-aggiungi-fila-pit">
                     <input type="hidden" name="gara_id" value="<?php echo $gara['id']; ?>">
@@ -192,7 +229,7 @@
             </div>
 
             <!-- SEZIONE 4: Iscrizione Team (Avversari) -->
-            <div class="form-section">
+            <div class="form-section avviso-gara-corso" style="<?php echo $haStintAttivi ? 'opacity: 0.6; pointer-events: none;' : ''; ?>">
                 <h2>4. Iscrizione Team alla Gara</h2>
                 <form action="<?php echo BASE_URL; ?>/gare/iscriviTeam" method="POST" id="form-iscrivi-team">
                     <input type="hidden" name="gara_id" value="<?php echo $gara['id']; ?>">

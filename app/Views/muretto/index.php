@@ -45,6 +45,17 @@
         .rating-2 { background: #ffc107; color: #000; }
         .rating-3 { background: #28a745; color: #fff; }
         
+        .stint-cancellato { background: #f8d7da !important; opacity: 0.7; }
+        .stint-cancellato td { text-decoration: line-through; color: #721c24; }
+        .btn-cancella { background: #dc3545; color: white; padding: 3px 8px; font-size: 0.8em; border: none; border-radius: 3px; cursor: pointer; margin-right: 5px; }
+        .btn-cancella:hover { background: #c82333; }
+        .btn-ripristina { background: #28a745; color: white; padding: 3px 8px; font-size: 0.8em; border: none; border-radius: 3px; cursor: pointer; }
+        .btn-ripristina:hover { background: #218838; }
+        .sezione-cancellati { margin-top: 30px; border: 2px dashed #dc3545; border-radius: 5px; padding: 15px; background: #fff5f5; }
+        .sezione-cancellati h3 { color: #dc3545; margin-top: 0; }
+        .conferma-cancellazione { background: #fff; border: 2px solid #dc3545; border-radius: 5px; padding: 15px; margin: 10px 0; }
+        .conferma-cancellazione input { padding: 8px; border: 1px solid #ccc; border-radius: 3px; margin-right: 10px; }
+        
         <?php
         function getRatingBadge($rating) {
             $r = (int)$rating;
@@ -146,13 +157,16 @@
                     Iniziato a: <strong><?php echo htmlspecialchars(\App\Core\TimeHelper::daMinutiaHHMM($stintAttivo['minuto_ingresso'])); ?></strong>
                 </div>
                 
-                <form action="<?php echo BASE_URL; ?>/muretto/termina/<?php echo $gara['id']; ?>" method="POST" class="form-inline" style="margin-top: 30px;">
+                <form action="<?php echo BASE_URL; ?>/muretto/termina/<?php echo $gara['id']; ?><?php echo isset($teamSelezionato) ? '/' . $teamSelezionato['team_id'] : ''; ?>" method="POST" class="form-inline" style="margin-top: 30px;">
                     <input type="hidden" name="stint_id" value="<?php echo $stintAttivo['id']; ?>">
+                    <?php if (isset($teamSelezionato)): ?>
+                        <input type="hidden" name="team_id" value="<?php echo $teamSelezionato['team_id']; ?>">
+                    <?php endif; ?>
                     <label for="durata" style="font-size: 1.2em; font-weight:bold;">Tempo in Pista (HH:MM):</label>
                     <input type="text" id="durata" name="durata" required style="width: 150px;" placeholder="Es. 01:15" pattern="[0-9]{2}:[0-9]{2}">
                     <button type="submit" class="btn-enorme btn-rosso">TERMINA STINT</button>
                     <a
-                        href="<?php echo BASE_URL; ?>/muretto/annullaStintAttivo/<?php echo $gara['id']; ?>/<?php echo $stintAttivo['id']; ?>"
+                        href="<?php echo BASE_URL; ?>/muretto/annullaStintAttivo/<?php echo $gara['id']; ?>/<?php echo $stintAttivo['id']; ?><?php echo isset($teamSelezionato) ? '?team_id=' . $teamSelezionato['team_id'] : ''; ?>"
                         style="display:inline-block; font-size:1em; padding:10px 15px; background:#6c757d; color:white; text-decoration:none; border-radius:5px; font-weight:bold;"
                         onclick="return confirm('Sicuro di voler annullare questo stint?');"
                     >
@@ -165,7 +179,10 @@
             <div class="box-section box-libero">
                 <h2 style="margin:0; color: #155724; font-size: 2em;">BOX PRONTO - NESSUNO IN PISTA</h2>
                 
-                <form action="<?php echo BASE_URL; ?>/muretto/inizia/<?php echo $gara['id']; ?>" method="POST" class="form-inline" style="margin-top: 20px;">
+                <form action="<?php echo BASE_URL; ?>/muretto/inizia/<?php echo $gara['id']; ?><?php echo isset($teamSelezionato) ? '/' . $teamSelezionato['team_id'] : ''; ?>" method="POST" class="form-inline" style="margin-top: 20px;">
+                    <?php if (isset($teamSelezionato)): ?>
+                        <input type="hidden" name="team_id" value="<?php echo $teamSelezionato['team_id']; ?>">
+                    <?php endif; ?>
                     <label for="pilota_id" style="font-size: 1.2em; font-weight:bold;">Pilota che sale:</label>
                     <select id="pilota_id" name="pilota_id" required>
                         <option value="">-- Seleziona Pilota --</option>
@@ -254,6 +271,7 @@
                             <th>Ingresso (HH:MM)</th>
                             <th>Tempo in Pista (HH:MM)</th>
                             <th>Uscita (HH:MM)</th>
+                            <th>Azioni</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -283,8 +301,11 @@
                                 <td><strong><?php echo htmlspecialchars($stint['cognome'] . ' ' . $stint['nome']); ?></strong></td>
                                 <td>
                                     <?php if ($is_primo): ?>
-                                        <form action="<?php echo BASE_URL; ?>/muretto/aggiornaPrimoIngresso/<?php echo $gara['id']; ?>" method="POST" style="display:inline-flex; gap:5px; justify-content:center; align-items:center;">
+                                        <form action="<?php echo BASE_URL; ?>/muretto/aggiornaPrimoIngresso/<?php echo $gara['id']; ?><?php echo isset($teamSelezionato) ? '/' . $teamSelezionato['team_id'] : ''; ?>" method="POST" style="display:inline-flex; gap:5px; justify-content:center; align-items:center;">
                                             <input type="hidden" name="stint_id" value="<?php echo $stint['id']; ?>">
+                                            <?php if (isset($teamSelezionato)): ?>
+                                                <input type="hidden" name="team_id" value="<?php echo $teamSelezionato['team_id']; ?>">
+                                            <?php endif; ?>
                                             <input type="text" name="minuto_ingresso_hhmm" value="<?php echo htmlspecialchars($ingressoHHMM); ?>" required style="width: 80px; padding: 5px; text-align:center;" pattern="[0-9]{2}:[0-9]{2}">
                                             <button type="submit" class="btn-piccolo">Applica</button>
                                         </form>
@@ -295,8 +316,11 @@
                                 </td>
                                 <td>
                                     <?php if ($durata_minuti !== null): ?>
-                                        <form action="<?php echo BASE_URL; ?>/muretto/modificaDurata/<?php echo $gara['id']; ?>" method="POST" style="display:inline-flex; gap:5px; justify-content:center; align-items:center;">
+                                        <form action="<?php echo BASE_URL; ?>/muretto/modificaDurata/<?php echo $gara['id']; ?><?php echo isset($teamSelezionato) ? '/' . $teamSelezionato['team_id'] : ''; ?>" method="POST" style="display:inline-flex; gap:5px; justify-content:center; align-items:center;">
                                             <input type="hidden" name="stint_id" value="<?php echo $stint['id']; ?>">
+                                            <?php if (isset($teamSelezionato)): ?>
+                                                <input type="hidden" name="team_id" value="<?php echo $teamSelezionato['team_id']; ?>">
+                                            <?php endif; ?>
                                             <input type="text" name="durata" value="<?php echo htmlspecialchars($durataHHMM); ?>" required style="width: 80px; padding: 5px; text-align:center;" pattern="[0-9]{2}:[0-9]{2}">
                                             <button type="submit" class="btn-piccolo">Aggiorna</button>
                                         </form>
@@ -310,17 +334,77 @@
                                     <?php endif; ?>
                                 </td>
                                 <td><?php echo htmlspecialchars($uscitaHHMM); ?></td>
+                                <td style="text-align: center;">
+                                    <?php if ($durata_minuti !== null): ?>
+                                        <button type="button" class="btn-cancella" onclick="mostraConfermaCancellazione(<?php echo $stint['id']; ?>, '<?php echo htmlspecialchars($stint['cognome'] . ' ' . $stint['nome']); ?>', '<?php echo htmlspecialchars($ingressoHHMM); ?>')">
+                                            Cancella
+                                        </button>
+                                    <?php else: ?>
+                                        <span style="color: #999; font-size: 0.8em;">-</span>
+                                    <?php endif; ?>
+                                </td>
                             </tr>
                         <?php 
                             $is_primo = false;
                         endforeach; 
                         ?>
                         <?php if (empty($tuttiStint)): ?>
-                            <tr><td colspan="5">Nessuno stint registrato per questa gara.</td></tr>
+                            <tr><td colspan="6">Nessuno stint registrato per questa gara.</td></tr>
                         <?php endif; ?>
                     </tbody>
                 </table>
             </div>
+
+            <!-- Sezione Stint Cancellati -->
+            <?php if (!empty($stintCancellati)): ?>
+                <div style="margin-top: 20px; padding: 15px; background: #fff5f5; border: 2px dashed #dc3545; border-radius: 8px;">
+                    <h3 style="color: #dc3545; margin: 0 0 15px 0;">🗑️ Stint Cancellati</h3>
+                    <p style="color: #721c24; font-size: 0.9em; margin: 0 0 15px 0;">Questi stint sono stati cancellati ma possono essere ripristinati.</p>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #f8d7da;">
+                                <th style="padding: 8px; text-align: left; border: 1px solid #dc3545;">N° Stint</th>
+                                <th style="padding: 8px; text-align: left; border: 1px solid #dc3545;">Pilota</th>
+                                <th style="padding: 8px; text-align: left; border: 1px solid #dc3545;">Ingresso (HH:MM)</th>
+                                <th style="padding: 8px; text-align: left; border: 1px solid #dc3545;">Tempo in Pista (HH:MM)</th>
+                                <th style="padding: 8px; text-align: left; border: 1px solid #dc3545;">Uscita (HH:MM)</th>
+                                <th style="padding: 8px; text-align: center; border: 1px solid #dc3545;">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php 
+                            $numero_stint_cancellato = 1;
+                            foreach ($stintCancellati as $stint): 
+                                $ingressoHHMM = \App\Core\TimeHelper::daMinutiaHHMM($stint['minuto_ingresso']);
+                                $durata_minuti = $stint['durata_minuti'];
+                                
+                                if ($durata_minuti !== null) {
+                                    $durataHHMM = \App\Core\TimeHelper::daMinutiaHHMM($durata_minuti);
+                                    $uscitaHHMM = \App\Core\TimeHelper::daMinutiaHHMM($stint['minuto_ingresso'] + $durata_minuti);
+                                } else {
+                                    $durataHHMM = 'N/D';
+                                    $uscitaHHMM = 'N/D';
+                                }
+                            ?>
+                                <tr style="background: #f8d7da; opacity: 0.8;">
+                                    <td style="padding: 8px; border: 1px solid #dc3545;"><?php echo $numero_stint_cancellato++; ?></td>
+                                    <td style="padding: 8px; border: 1px solid #dc3545; text-decoration: line-through;">
+                                        <strong><?php echo htmlspecialchars($stint['cognome'] . ' ' . $stint['nome']); ?></strong>
+                                    </td>
+                                    <td style="padding: 8px; border: 1px solid #dc3545;"><?php echo htmlspecialchars($ingressoHHMM); ?></td>
+                                    <td style="padding: 8px; border: 1px solid #dc3545;"><?php echo htmlspecialchars($durataHHMM); ?></td>
+                                    <td style="padding: 8px; border: 1px solid #dc3545;"><?php echo htmlspecialchars($uscitaHHMM); ?></td>
+                                    <td style="padding: 8px; text-align: center; border: 1px solid #dc3545;">
+                                        <form action="<?php echo BASE_URL; ?>/muretto/ripristinaStint/<?php echo $stint['id']; ?>/<?php echo $gara['id']; ?><?php echo isset($teamSelezionato) ? '/' . $teamSelezionato['team_id'] : ''; ?>" method="POST" style="display:inline;">
+                                            <button type="submit" class="btn-ripristina" style="background: #28a745; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em;" onclick="return confirm('Ripristinare questo stint?')">Ripristina</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
 
             <!-- Colonna 2: Radar Avversari (30%) -->
             <div style="flex: 1; min-width: 250px;" id="refresh-radar">
@@ -372,6 +456,28 @@
                 </table>
             </div>
         </div>
+
+    
+    <!-- Modale Conferma Cancellazione -->
+    <div id="modal-conferma-cancellazione" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 5px; min-width: 400px;">
+            <h3 style="color: #dc3545; margin-top: 0;">⚠️ Conferma Cancellazione Stint</h3>
+            <p id="testo-conferma"></p>
+            <div class="conferma-cancellazione">
+                <form id="form-cancellazione" method="POST">
+                    <label>Digitare <strong>CONFERMA</strong> per procedere:</label><br>
+                    <input type="text" name="conferma" placeholder="CONFERMA" required>
+                    <input type="hidden" name="stint_id" id="cancellazione-stint-id">
+                    <?php if (isset($teamSelezionato)): ?>
+                        <input type="hidden" name="team_id" value="<?php echo $teamSelezionato['team_id']; ?>">
+                    <?php endif; ?>
+                    <div style="margin-top: 15px;">
+                        <button type="submit" class="btn-cancella">Cancella Stint</button>
+                        <button type="button" class="btn-piccolo" onclick="chiudiModaleCancellazione()">Annulla</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -407,6 +513,36 @@
                 .catch(function (errore) {
                     console.error('Errore polling muretto:', errore);
                 });
+        }
+
+        function mostraConfermaCancellazione(stintId, nomePilota, ingressoHHMM) {
+            document.getElementById('testo-conferma').innerHTML = 
+                'Sei sicuro di voler cancellare questo stint?<br><br>' +
+                '<strong>Pilota:</strong> ' + nomePilota + '<br>' +
+                '<strong>Ingresso:</strong> ' + ingressoHHMM + '<br><br>' +
+                'Questa azione è reversibile: potrai ripristinare lo stint in seguito.';
+            
+            document.getElementById('cancellazione-stint-id').value = stintId;
+            
+            // Imposta l'action del form
+            var action = '<?php echo BASE_URL; ?>/muretto/cancellaStint/' + stintId + '/<?php echo $gara['id']; ?><?php echo isset($teamSelezionato) ? '/' . $teamSelezionato['team_id'] : ''; ?>';
+            document.getElementById('form-cancellazione').action = action;
+            
+            // Mostra il modale
+            document.getElementById('modal-conferma-cancellazione').style.display = 'block';
+        }
+
+        function chiudiModaleCancellazione() {
+            document.getElementById('modal-conferma-cancellazione').style.display = 'none';
+            document.getElementById('form-cancellazione').reset();
+        }
+
+        // Chiudi il modale se si clicca fuori
+        window.onclick = function(event) {
+            var modal = document.getElementById('modal-conferma-cancellazione');
+            if (event.target == modal) {
+                chiudiModaleCancellazione();
+            }
         }
 
         setInterval(pollingPaginaMuretto, 5000);

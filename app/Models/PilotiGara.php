@@ -34,11 +34,12 @@ class PilotiGara {
      */
     public function ottieniPerGara($gara_id) {
         $sql = "
-            SELECT pg.id, pg.gara_id, pg.pilota_id, p.nome, p.cognome 
+            SELECT pg.id, pg.gara_id, pg.pilota_id, pg.team_id, p.nome, p.cognome, t.nome_team 
             FROM piloti_gara pg
             JOIN piloti_mio_team p ON pg.pilota_id = p.id
+            LEFT JOIN teams t ON pg.team_id = t.id
             WHERE pg.gara_id = :gara_id
-            ORDER BY p.cognome, p.nome ASC
+            ORDER BY t.nome_team, p.cognome, p.nome ASC
         ";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':gara_id' => $gara_id]);
