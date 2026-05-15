@@ -29,6 +29,8 @@
         .rating-1 { background: #dc3545; color: #fff; }
         .rating-2 { background: #ffc107; color: #000; }
         .rating-3 { background: #28a745; color: #fff; }
+        .rating-4 { background: #28a745; color: #fff; }
+        .rating-5 { background: #28a745; color: #fff; }
 
         /* Tabella Team */
         .team-row { background: white; padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; }
@@ -52,6 +54,8 @@
             if ($r === 1) { $class = 'rating-1'; $text = 'Scarso'; }
             elseif ($r === 2) { $class = 'rating-2'; $text = 'Medio'; }
             elseif ($r === 3) { $class = 'rating-3'; $text = 'Buono'; }
+            elseif ($r === 4) { $class = 'rating-4'; $text = '💣 Bomba'; }
+            elseif ($r === 5) { $class = 'rating-5'; $text = '🏆 Best Lap'; }
             return "<span class=\"rating-badge $class\">$text</span>";
         }
         function getRatingText($rating) {
@@ -59,6 +63,8 @@
             if ($r === 1) return 'Scarso';
             if ($r === 2) return 'Medio';
             if ($r === 3) return 'Buono';
+            if ($r === 4) return '💣 Bomba';
+            if ($r === 5) return '🏆 Best Lap';
             return 'Ignoto';
         }
         ?>
@@ -135,6 +141,8 @@
                                         <option value="1" <?php echo ($sf['kart']['rating']==1)?'selected':''; ?>>Scarso</option>
                                         <option value="2" <?php echo ($sf['kart']['rating']==2)?'selected':''; ?>>Medio</option>
                                         <option value="3" <?php echo ($sf['kart']['rating']==3)?'selected':''; ?>>Buono</option>
+                                        <option value="4" <?php echo ($sf['kart']['rating']==4)?'selected':''; ?>>💣 Bomba</option>
+                                        <option value="5" <?php echo ($sf['kart']['rating']==5)?'selected':''; ?>>🏆 Best Lap</option>
                                     </select>
                                     <button type="submit" class="btn-aggiornaRating" style="background: <?php echo $colore_hex; ?>; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 1.2em; padding: 15px 10px; width: 100%;">Aggiorna Rating</button>
                                 </div>
@@ -166,6 +174,8 @@
                                     <option value="1">Scarso</option>
                                     <option value="2">Medio</option>
                                     <option value="3">Buono</option>
+                                    <option value="4">💣 Bomba</option>
+                                    <option value="5">🏆 Best Lap</option>
                                 </select>
                                 <button type="submit" style="padding: 8px 15px; background: <?php echo $colore_hex; ?>; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">Aggiorna</button>
                             </div>
@@ -194,6 +204,8 @@
                                     <option value="1" <?php echo ($st['kart']['rating']==1)?'selected':''; ?>>Scarso</option>
                                     <option value="2" <?php echo ($st['kart']['rating']==2)?'selected':''; ?>>Medio</option>
                                     <option value="3" <?php echo ($st['kart']['rating']==3)?'selected':''; ?>>Buono</option>
+                                    <option value="4" <?php echo ($st['kart']['rating']==4)?'selected':''; ?>>💣 Bomba</option>
+                                    <option value="5" <?php echo ($st['kart']['rating']==5)?'selected':''; ?>>🏆 Best Lap</option>
                                 </select>
                             </form>
                         <?php endif; ?>

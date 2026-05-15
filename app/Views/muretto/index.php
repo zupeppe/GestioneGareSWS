@@ -44,6 +44,8 @@
         .rating-1 { background: #dc3545; color: #fff; }
         .rating-2 { background: #ffc107; color: #000; }
         .rating-3 { background: #28a745; color: #fff; }
+        .rating-4 { background: #28a745; color: #fff; }
+        .rating-5 { background: #28a745; color: #fff; }
         
         .stint-cancellato { background: #f8d7da !important; opacity: 0.7; }
         .stint-cancellato td { text-decoration: line-through; color: #721c24; }
@@ -63,6 +65,8 @@
             if ($r === 1) { $class = 'rating-1'; $text = 'Scarso'; }
             elseif ($r === 2) { $class = 'rating-2'; $text = 'Medio'; }
             elseif ($r === 3) { $class = 'rating-3'; $text = 'Buono'; }
+            elseif ($r === 4) { $class = 'rating-4'; $text = '💣 Bomba'; }
+            elseif ($r === 5) { $class = 'rating-5'; $text = '🏆 Best Lap'; }
             return "<span class=\"rating-badge $class\">$text</span>";
         }
         ?>

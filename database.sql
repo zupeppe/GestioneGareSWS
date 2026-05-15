@@ -42,7 +42,7 @@ CREATE TABLE kart_gara (
     id INT AUTO_INCREMENT PRIMARY KEY,
     gara_id INT NOT NULL,
     numero_kart INT NOT NULL,
-    rating TINYINT DEFAULT 0 COMMENT '0: ignoto, 1: scarso, 2: medio, 3: buono',
+    rating TINYINT DEFAULT 0 COMMENT '0: ignoto, 1: scarso, 2: medio, 3: buono, 4: bomba, 5: best lap',
     ultima_fila VARCHAR(50),
     note TEXT,
     FOREIGN KEY (gara_id) REFERENCES gare(id) ON DELETE CASCADE
