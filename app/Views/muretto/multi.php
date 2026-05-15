@@ -220,6 +220,7 @@
                         <div class="strategia-info">
                             <div>Pit residui: <strong><?php echo $data['strategia']['pit_rimanenti_obbligatori']; ?></strong></div>
                             <div>Tempo max copribile: <strong><?php echo \App\Core\TimeHelper::daMinutiaHHMM($data['strategia']['tempo_massimo_copribile']); ?></strong></div>
+                            <div>Media Stint: <strong><?php echo htmlspecialchars($data['strategia']['media_stint_formattata']) ?></strong></div>
                             <div>Jolly residui: <span class="jolly-count"><?php echo $data['strategia']['jolly_disponibili']; ?></span></div>
                             <div>Stato: <strong style="color: <?php echo $data['strategia']['colore_strategia']; ?>;"><?php echo htmlspecialchars($data['strategia']['stato_strategia']); ?></strong></div>
                         </div>
@@ -348,6 +349,7 @@
                             <div class="strategia-info">
                                 <div>Pit residui: <strong>${team.strategia.pit_rimanenti_obbligatori}</strong></div>
                                 <div>Tempo max copribile: <strong>${tempoFormattato}</strong></div>
+                                <div>Media Stint: <strong>${team.strategia.media_stint_formattata}</strong></div>
                                 <div>Jolly residui: <span class="jolly-count">${team.strategia.jolly_disponibili}</span></div>
                                 <div>Stato: <strong style="color: ${team.strategia.colore_strategia};">${team.strategia.stato_strategia}</strong></div>
                             </div>

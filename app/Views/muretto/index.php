@@ -115,6 +115,7 @@
                 <h3 style="margin-top:0;">Pannello Strategia</h3>
                 <div style="margin-bottom: 5px;">Pit obbligatori rimanenti: <strong><?php echo htmlspecialchars($strategia['pit_rimanenti_obbligatori']); ?></strong></div>
                 <div style="margin-bottom: 5px;">Tempo Max Copribile: <strong><?php echo htmlspecialchars(\App\Core\TimeHelper::daMinutiaHHMM($strategia['tempo_massimo_copribile'])); ?></strong></div>
+                <div style="margin-bottom: 5px;">Media Stint Ideale: <strong><?php echo htmlspecialchars($strategia['media_stint_formattata']) ?></strong></div>
                 <div>
                     Stato: <strong style="color: <?php echo $strategia['colore_strategia']; ?>;"><?php echo htmlspecialchars($strategia['stato_strategia']); ?></strong>
                     <?php if ($strategia['stato_strategia'] === 'OK'): ?>

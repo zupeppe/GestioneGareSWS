@@ -115,7 +115,7 @@
                         <input type="number" id="min_stint" name="min_stint" value="<?php echo htmlspecialchars($gara['min_stint'] ?? 0); ?>" min="0" required>
                     </div>
                     <div class="form-group">
-                        <label for="tempo_minimo_pit">Tempo Minimo Pit (minuti fermi ai box):</label>
+                        <label for="tempo_minimo_pit">Tempo minimo Pit (in secondi):</label>
                         <input type="number" id="tempo_minimo_pit" name="tempo_minimo_pit" value="<?php echo htmlspecialchars($gara['tempo_minimo_pit'] ?? 0); ?>" min="0" required>
                     </div>
                     <div class="form-group">

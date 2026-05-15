@@ -97,51 +97,68 @@ class MurettoController {
      * @return array Array con i dati strategici calcolati
      */
     private function calcolaStrategia($gara, $tuttiStint, $minutiResidui) {
-        $stint_chiusi = 0;
-        foreach ($tuttiStint as $s) {
-            if ($s['durata_minuti'] !== null) {
-                $stint_chiusi++;
-            }
-        }
-
-        $min_stint = (int)($gara['min_stint'] ?? 0);
+        // 1. Dati base e sicurezza
         $durata_max = (int)($gara['durata_max_stint'] ?? 0);
-
-        $pit_fatti = $stint_chiusi;
-        $pit_rimanenti_obbligatori = max(0, $min_stint - $pit_fatti);
-
-        // Calcolo Jolly
-        // Formula richiesta: (Stint_Rimanenti * (durata_max_stint - 1)) + (Pit_Rimanenti * tempo_minimo_pit)
-        $stint_utile = max(1, $durata_max - 1);
+        $stint_utile = max(1, $durata_max - 1); 
+        $stint_fatti = count($tuttiStint);
+        $pit_fatti = max(0, $stint_fatti - 1);
+        $pit_obbligatori = (int)($gara['min_stint'] ?? 0);
+        $pit_rimanenti_obbligatori = max(0, $pit_obbligatori - $pit_fatti);
         $stint_rimanenti = $pit_rimanenti_obbligatori + 1;
-        $tempo_minimo_pit = (int)($gara['tempo_minimo_pit'] ?? 0);
-        
-        $tempo_massimo_copribile = ($stint_rimanenti * $stint_utile) + ($pit_rimanenti_obbligatori * $tempo_minimo_pit);
-        
-        $margine = $tempo_massimo_copribile - $minutiResidui;
+
+        // 2. Calcolo tempo Pit in minuti (es. 140s = 2.333 min)
+        $tempo_minimo_pit_sec = (int)($gara['tempo_minimo_pit'] ?? 0);
+        $pit_time_min = $tempo_minimo_pit_sec / 60;
+        $totale_tempo_pit_rimanente = $pit_rimanenti_obbligatori * $pit_time_min;
+
+        // 3. Calcolo Tempo Massimo Copribile (Stint + Pit)
+        $tempo_massimo_stint = $stint_rimanenti * $stint_utile;
+        $tempo_massimo_copribile_totale = $tempo_massimo_stint + $totale_tempo_pit_rimanente;
+
+        // 4. Calcolo Margine e Jolly
+        $margine = $tempo_massimo_copribile_totale - $minutiResidui;
+
         $jolly_disponibili = 0;
         $pit_extra_necessari = 0;
-
         if ($margine >= 0) {
             $jolly_disponibili = floor($margine / $stint_utile);
             $stato_strategia = "OK";
-            $colore_strategia = "#28a745"; // Verde
+            $colore_strategia = "#28a745";
         } else {
             $pit_extra_necessari = ceil(abs($margine) / $stint_utile);
             $stato_strategia = "IN AFFANNO";
-            $colore_strategia = "#dc3545"; // Rosso
+            $colore_strategia = "#dc3545";
         }
+
+        // 5. Calcolo Media Stint Rimanenti
+        // Dobbiamo coprire i minuti residui. Togliamo il tempo fisso dei pit stop.
+        // Il resto è il tempo netto da passare in pista, diviso per gli stint.
+        $tempo_da_passare_in_pista = $minutiResidui - $totale_tempo_pit_rimanente;
+        $media_stint = 0;
+        if ($stint_rimanenti > 0 && $tempo_da_passare_in_pista > 0) {
+            $media_stint = $tempo_da_passare_in_pista / $stint_rimanenti;
+        }
+
+        // 6. Formattazione in MM:SS sicura
+        $minuti_media = floor($media_stint);
+        $secondi_media = round(($media_stint - $minuti_media) * 60);
+        if ($secondi_media == 60) {
+            $minuti_media += 1;
+            $secondi_media = 0;
+        }
+        $media_stint_formattata = sprintf("%02d:%02d", $minuti_media, $secondi_media);
 
         return [
             'pit_fatti' => $pit_fatti,
-            'pit_minimi' => $min_stint,
+            'pit_minimi' => $pit_obbligatori,
             'pit_rimanenti_obbligatori' => $pit_rimanenti_obbligatori,
-            'tempo_massimo_copribile' => $tempo_massimo_copribile,
+            'tempo_massimo_copribile' => $tempo_massimo_copribile_totale,
             'margine' => $margine,
             'stato_strategia' => $stato_strategia,
             'colore_strategia' => $colore_strategia,
             'jolly_disponibili' => $jolly_disponibili,
-            'pit_extra_necessari' => $pit_extra_necessari
+            'pit_extra_necessari' => $pit_extra_necessari,
+            'media_stint_formattata' => $media_stint_formattata
         ];
     }
 
