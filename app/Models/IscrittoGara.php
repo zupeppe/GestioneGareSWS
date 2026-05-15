@@ -49,7 +49,7 @@ class IscrittoGara {
      * @return array Array degli iscritti (id iscrizione, numero_gara, nome_team)
      */
     public function ottieniPerGara($gara_id) {
-        $sql = "SELECT i.id, i.team_id, i.numero_gara, t.nome_team 
+        $sql = "SELECT i.id, i.team_id, i.numero_gara, i.is_gestito, t.nome_team 
                 FROM iscritti_gara i
                 JOIN teams t ON i.team_id = t.id
                 WHERE i.gara_id = :gara_id
@@ -131,5 +131,65 @@ class IscrittoGara {
             ':numero_gara' => $nuovo_numero,
             ':id' => $id
         ]);
+    }
+
+    /**
+     * Aggiorna lo stato di gestione di un team.
+     * 
+     * @param int $id ID dell'iscrizione
+     * @param int $is_gestito 0 o 1
+     * @return bool
+     */
+    public function aggiornaGestito($id, $is_gestito) {
+        $sql = "UPDATE iscritti_gara SET is_gestito = :is_gestito WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([':is_gestito' => $is_gestito, ':id' => $id]);
+    }
+
+    /**
+     * Conta quanti team sono gestiti per una gara.
+     * 
+     * @param int $gara_id L'ID della gara
+     * @return int Numero di team gestiti
+     */
+    public function contaGestiti($gara_id) {
+        $sql = "SELECT COUNT(*) FROM iscritti_gara WHERE gara_id = :gara_id AND is_gestito = 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':gara_id' => $gara_id]);
+        return (int)$stmt->fetchColumn();
+    }
+
+    /**
+     * Recupera un'iscrizione specifica per team e gara.
+     * 
+     * @param int $gara_id L'ID della gara
+     * @param int $team_id L'ID del team
+     * @return array|false Dati dell'iscrizione
+     */
+    public function ottieniPerTeamEGara($gara_id, $team_id) {
+        $sql = "SELECT i.*, t.nome_team 
+                FROM iscritti_gara i
+                JOIN teams t ON i.team_id = t.id
+                WHERE i.gara_id = :gara_id AND i.team_id = :team_id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':gara_id' => $gara_id, ':team_id' => $team_id]);
+        return $stmt->fetch();
+    }
+
+    /**
+     * Recupera tutti i team gestiti per una gara.
+     * 
+     * @param int $gara_id L'ID della gara
+     * @return array Array dei team gestiti
+     */
+    public function ottieniGestitiPerGara($gara_id) {
+        $sql = "SELECT i.*, t.nome_team 
+                FROM iscritti_gara i
+                JOIN teams t ON i.team_id = t.id
+                WHERE i.gara_id = :gara_id AND i.is_gestito = 1
+                ORDER BY i.numero_gara ASC";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':gara_id' => $gara_id]);
+        return $stmt->fetchAll();
     }
 }

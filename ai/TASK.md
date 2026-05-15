@@ -1,10 +1,20 @@
 # Task Attuali e Futuri
 
-## Sprint 5.1: Rifiniture e Bugfix (Da inviare all'Agente)
-- [ ] **Bug del Minuto Zero:** Creare il metodo `inizializzaFila` nello `SpotterController` per assegnare il primo kart a una fila vuota a inizio gara.
-- [ ] **Navigazione Globale (UX):** Creare una `navbar.php` (Home, Muretto, Spotter) da includere in tutte le viste principali per evitare l'uso del tasto "Indietro" del browser.
-- [ ] **Annulla Stint (Muretto):** Aggiungere un bottone per cancellare immediatamente lo stint attivo in caso di click accidentale, senza dover chiudere lo stint con un tempo fittizio.
+# Task Attuali e Futuri
 
-## Sprint 6: Sicurezza e Autenticazione (Pianificato)
-- [ ] Implementare Login e Sessioni.
-- [ ] Creare ruoli (Admin, Muretto, Spotter) per limitare l'accesso alle rispettive aree.
+## Sprint 5.3: Multi-Team e Home Redesign (ATTUALE)
+- [ ] **Database:** Aggiungere colonna `is_gestito` (BOOLEAN) alla tabella `iscritti_gara` per marcare quali team sono della nostra scuderia.
+- [ ] **Setup Gara:** Permettere di selezionare fino a 4 team come "gestiti" tramite checkbox o selezione multipla.
+- [ ] **Muretto Multi-Team:** - Creare vista `muretto/multi.php` con layout a colonne (una colonna per team).
+    - Permettere di gestire stint/cambi separatamente per ogni team nella stessa pagina.
+- [ ] **Home Page Redesign:** - Layout schematico con "Nuova Gara", "Gare in Corso" e "Anagrafiche".
+    - Link grafici chiari per Gestione Piloti e Gestione Team.
+
+## Sprint 6: Sicurezza e Autenticazione (ATTUALE)
+- [ ] Creare tabella `utenti` nel database (campi: id, username, password_hash, ruolo).
+- [ ] Implementare LoginController e vista di login.
+- [ ] Creare middleware/filtro per proteggere le rotte in base al ruolo (Admin, Muretto, Spotter).
+
+## Sprint 7: Test e Deploy (Futuro)
+- [ ] Simulazione gara completa multi-dispositivo.
+- [ ] Preparazione ambiente di produzione.

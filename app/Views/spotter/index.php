@@ -19,6 +19,7 @@
         /* Bottoni File */
         .fila-buttons { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 15px; }
         .btn-fila { flex: 1; min-width: 140px; padding: 25px 10px; font-size: 1.5em; font-weight: bold; color: white; border: none; border-radius: 10px; cursor: pointer; text-transform: uppercase; box-shadow: 0 4px 6px rgba(0,0,0,0.1); box-sizing: border-box; text-align: center; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); }
+        .btn-aggiornaRating { flex: 1; min-width: 40px;  padding: 25px 10px; font-size: 0.5em; overflow: hidden; text-overflow: ellipsis; font-weight: bold; color: white; border: none; border-radius: 10px; cursor: pointer; text-transform: uppercase; box-shadow: 0 4px 6px rgba(0,0,0,0.1); box-sizing: border-box; text-align: center; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); }
         .btn-fila:active { transform: translateY(2px); box-shadow: 0 2px 3px rgba(0,0,0,0.1); }
         
         /* Box Stato */
@@ -28,12 +29,16 @@
         .rating-1 { background: #dc3545; color: #fff; }
         .rating-2 { background: #ffc107; color: #000; }
         .rating-3 { background: #28a745; color: #fff; }
+        .rating-4 { background: #28a745; color: #fff; }
+        .rating-5 { background: #28a745; color: #fff; }
 
         /* Tabella Team */
         .team-row { background: white; padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; }
         .team-info { font-size: 1.2em; font-weight: bold; flex: 1; min-width: 200px; }
         .team-rating-form { display: flex; gap: 10px; align-items: center; margin-top: 5px; }
         .team-rating-form select { padding: 10px; font-size: 1em; border-radius: 4px; border: 1px solid #ccc; background: white; }
+        .numero-kart-lasciato-wrap { margin-top: 10px; display: none; }
+        .numero-kart-lasciato-wrap input { width: 100%; padding: 12px; font-size: 1.1em; border: 2px solid #dc3545; border-radius: 8px; box-sizing: border-box; }
         
         .nav-link { display: inline-block; margin-bottom: 15px; font-size: 1.2em; text-decoration: none; color: #0056b3; font-weight: bold; }
         
@@ -49,6 +54,8 @@
             if ($r === 1) { $class = 'rating-1'; $text = 'Scarso'; }
             elseif ($r === 2) { $class = 'rating-2'; $text = 'Medio'; }
             elseif ($r === 3) { $class = 'rating-3'; $text = 'Buono'; }
+            elseif ($r === 4) { $class = 'rating-4'; $text = '💣 Bomba'; }
+            elseif ($r === 5) { $class = 'rating-5'; $text = '🏆 Best Lap'; }
             return "<span class=\"rating-badge $class\">$text</span>";
         }
         function getRatingText($rating) {
@@ -56,6 +63,8 @@
             if ($r === 1) return 'Scarso';
             if ($r === 2) return 'Medio';
             if ($r === 3) return 'Buono';
+            if ($r === 4) return '💣 Bomba';
+            if ($r === 5) return '🏆 Best Lap';
             return 'Ignoto';
         }
         ?>
@@ -83,7 +92,6 @@
         <!-- 1. PANNELLO AZIONE -->
         <h2 class="section-title">Azione (Sostituzione Rapida)</h2>
         <form action="<?php echo BASE_URL; ?>/spotter/registraSostituzione/<?php echo $gara['id']; ?>" method="POST" id="form-sostituzione">
-            <input type="hidden" name="numero_kart_lasciato" id="numero_kart_lasciato" value="">
             <select name="iscritto_gara_id" id="select-team" class="select-team" required>
                 <option value="">-- Seleziona Team --</option>
                 <?php foreach ($iscritti as $iscritto): 
@@ -99,28 +107,78 @@
                     </option>
                 <?php endforeach; ?>
             </select>
+            <div class="numero-kart-lasciato-wrap" id="numero-kart-lasciato-wrap">
+                <label for="numero_kart_lasciato" style="display:block; margin-bottom:5px; font-weight:bold; color:#721c24;">
+                    Team senza kart precedente: inserisci il numero kart lasciato
+                </label>
+                <input type="text" name="numero_kart_lasciato" id="numero_kart_lasciato" value="" placeholder="Es. 27" inputmode="numeric">
+            </div>
         </form>
             
-        <div class="fila-buttons">
+        <div class="fila-buttons" id="refresh-stato-box" id="refresh-file-kart">
             <?php foreach ($statoFile as $sf): 
                 $nome_fila = $sf['fila'];
                 $kart_rating = $sf['kart']['rating'] ?? 0;
                 $colore_hex = htmlspecialchars($sf['colore_hex'] ?? '#343a40');
             ?>
                 <?php if ($sf['kart']): ?>
-                    <button type="button" class="btn-fila" style="background-color: <?php echo $colore_hex; ?>;" onclick="inviaSostituzione('<?php echo htmlspecialchars($nome_fila); ?>');">
-                        <div>Fila <?php echo htmlspecialchars($nome_fila); ?></div>
-                        <div style="font-size: 0.9em; margin-top: 12px; opacity: 1; text-transform: none; text-shadow: none;">
-                            Kart: <?php echo getRatingBadge($kart_rating); ?>
+                    <div style="flex: 1; min-width: 140px; display: flex; flex-direction: column; gap: 10px;">
+                        <button type="button" class="btn-fila" style="background-color: <?php echo $colore_hex; ?>; height: auto; min-height: 60px;" onclick="inviaSostituzione('<?php echo htmlspecialchars($nome_fila); ?>');">
+                            <div>Fila <?php echo htmlspecialchars($nome_fila); ?></div>
+                            <div style="font-size: 0.9em; margin-top: 5px; opacity: 1; text-transform: none; text-shadow: none;">
+                                Kart: <?php echo getRatingBadge($kart_rating); ?>
+                            </div>
+                        </button>
+                        
+                        <!-- Form per modificare rating kart fermo in fila -->
+                        <div style="padding: 10px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid <?php echo $colore_hex; ?>;">
+                            <form action="<?php echo BASE_URL; ?>/spotter/aggiornaRatingFila/<?php echo $gara['id']; ?>" method="POST" style="display:flex; flex-direction:column; gap:8px;">
+                                <input type="hidden" name="kart_id" value="<?php echo $sf['kart']['id']; ?>">
+                                <div style="font-weight: bold; margin-bottom:5px; color: <?php echo $colore_hex; ?>;">Modifica Rating Kart <?php echo htmlspecialchars($sf['kart']['numero_kart']); ?></div>
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <select name="rating" id="rating-<?php echo $sf['kart']['id']; ?>" style="flex: 1; padding: 8px; font-size: 1em; border: 1px solid #ccc; border-radius:4px; background: white;">
+                                        <option value="0" <?php echo ($sf['kart']['rating']==0)?'selected':''; ?>>Ignoto</option>
+                                        <option value="1" <?php echo ($sf['kart']['rating']==1)?'selected':''; ?>>Scarso</option>
+                                        <option value="2" <?php echo ($sf['kart']['rating']==2)?'selected':''; ?>>Medio</option>
+                                        <option value="3" <?php echo ($sf['kart']['rating']==3)?'selected':''; ?>>Buono</option>
+                                        <option value="4" <?php echo ($sf['kart']['rating']==4)?'selected':''; ?>>💣 Bomba</option>
+                                        <option value="5" <?php echo ($sf['kart']['rating']==5)?'selected':''; ?>>🏆 Best Lap</option>
+                                    </select>
+                                    <button type="submit" class="btn-aggiornaRating" style="background: <?php echo $colore_hex; ?>; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 1.2em; padding: 15px 10px; width: 100%;">Aggiorna Rating</button>
+                                </div>
+                            </form>
                         </div>
-                    </button>
+                    </div>
                 <?php else: ?>
                     <div style="flex: 1; min-width: 140px; padding: 15px; border: 2px dashed <?php echo $colore_hex; ?>; border-radius: 10px; text-align: center; background: white;">
                         <div style="font-weight: bold; color: <?php echo $colore_hex; ?>; margin-bottom: 10px;">Fila <?php echo htmlspecialchars($nome_fila); ?> Vuota</div>
                         <form action="<?php echo BASE_URL; ?>/spotter/inizializzaFila/<?php echo $gara['id']; ?>" method="POST" style="display:flex; flex-direction:column; gap:5px;">
                             <input type="hidden" name="fila_nome" value="<?php echo htmlspecialchars($nome_fila); ?>">
                             <input type="number" name="numero_kart" placeholder="N° Kart" required style="padding:8px; width:100%; box-sizing:border-box; font-size:1.1em; border:1px solid #ccc; border-radius:4px;">
-                            <button type="submit" style="padding:10px; background:<?php echo $colore_hex; ?>; color:white; border:none; border-radius:4px; font-weight:bold; font-size:1em; cursor:pointer;">Inizializza</button>
+                            <button type="submit" style="padding:10px; background:<?php echo $colore_hex; ?>; color:white; border:none; border-radius:4px; font-weight:bold; font-size:1em; cursor:pointer;">Inizializza Fila</button>
+                        </form>
+                    </div>
+                <?php endif; ?>
+                
+                <!-- Aggiungi controlli per modificare rating kart fermi in fila -->
+                <?php if (!$sf['kart']): ?>
+                    <div style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid <?php echo $colore_hex; ?>;">
+                        <form action="<?php echo BASE_URL; ?>/spotter/aggiornaRatingFila/<?php echo $gara['id']; ?>" method="POST" style="display:flex; flex-direction:column; gap:8px;">
+                            <input type="hidden" name="fila_nome" value="<?php echo htmlspecialchars($nome_fila); ?>">
+                            <div style="font-weight: bold; margin-bottom: 5px; color: <?php echo $colore_hex; ?>;">Modifica Rating Kart Fila <?php echo htmlspecialchars($nome_fila); ?></div>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <input type="number" name="numero_kart" placeholder="N° Kart" required style="flex: 1; padding: 8px; font-size: 1em; border: 1px solid #ccc; border-radius: 4px;">
+                                <input type="hidden" name="kart_id" value="">
+                                <select name="rating" id="rating-<?php echo $sf['id']; ?>" style="flex: 1; padding: 8px; font-size: 1em; border: 1px solid #ccc; border-radius: 4px; background: white;">
+                                    <option value="0">Ignoto</option>
+                                    <option value="1">Scarso</option>
+                                    <option value="2">Medio</option>
+                                    <option value="3">Buono</option>
+                                    <option value="4">💣 Bomba</option>
+                                    <option value="5">🏆 Best Lap</option>
+                                </select>
+                                <button type="submit" style="padding: 8px 15px; background: <?php echo $colore_hex; ?>; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">Aggiorna</button>
+                            </div>
                         </form>
                     </div>
                 <?php endif; ?>
@@ -129,28 +187,32 @@
 
         <!-- 3. LISTA TEAM E RATING -->
         <h2 class="section-title">Stato Kart in Pista (Team)</h2>
-        <?php foreach ($statoTeam as $st): ?>
-            <div class="team-row">
-                <div class="team-info">
-                    <span style="color:#666;">N° <?php echo htmlspecialchars($st['iscritto']['numero_gara']); ?></span> 
-                    <?php echo htmlspecialchars($st['iscritto']['nome_team']); ?>
+        <div id="refresh-lista-team">
+            <?php foreach ($statoTeam as $st): ?>
+                <div class="team-row">
+                    <div class="team-info">
+                        <span style="color:#666;">N° <?php echo htmlspecialchars($st['iscritto']['numero_gara']); ?></span> 
+                        <?php echo htmlspecialchars($st['iscritto']['nome_team']); ?>
+                    </div>
+                    <div class="team-rating-form">
+                        <?php echo getRatingBadge($st['kart']['rating'] ?? 0); ?>
+                        <?php if ($st['kart']): ?>
+                            <form action="<?php echo BASE_URL; ?>/spotter/cambiaRating/<?php echo $gara['id']; ?>" method="POST" style="margin:0;">
+                                <input type="hidden" name="kart_id" value="<?php echo $st['kart']['id']; ?>">
+                                <select name="rating" onchange="this.form.submit()">
+                                    <option value="0" <?php echo ($st['kart']['rating']==0)?'selected':''; ?>>Ignoto</option>
+                                    <option value="1" <?php echo ($st['kart']['rating']==1)?'selected':''; ?>>Scarso</option>
+                                    <option value="2" <?php echo ($st['kart']['rating']==2)?'selected':''; ?>>Medio</option>
+                                    <option value="3" <?php echo ($st['kart']['rating']==3)?'selected':''; ?>>Buono</option>
+                                    <option value="4" <?php echo ($st['kart']['rating']==4)?'selected':''; ?>>💣 Bomba</option>
+                                    <option value="5" <?php echo ($st['kart']['rating']==5)?'selected':''; ?>>🏆 Best Lap</option>
+                                </select>
+                            </form>
+                        <?php endif; ?>
+                    </div>
                 </div>
-                <div class="team-rating-form">
-                    <?php echo getRatingBadge($st['kart']['rating'] ?? 0); ?>
-                    <?php if ($st['kart']): ?>
-                        <form action="<?php echo BASE_URL; ?>/spotter/cambiaRating/<?php echo $gara['id']; ?>" method="POST" style="margin:0;">
-                            <input type="hidden" name="kart_id" value="<?php echo $st['kart']['id']; ?>">
-                            <select name="rating" onchange="this.form.submit()">
-                                <option value="0" <?php echo ($st['kart']['rating']==0)?'selected':''; ?>>Ignoto</option>
-                                <option value="1" <?php echo ($st['kart']['rating']==1)?'selected':''; ?>>Scarso</option>
-                                <option value="2" <?php echo ($st['kart']['rating']==2)?'selected':''; ?>>Medio</option>
-                                <option value="3" <?php echo ($st['kart']['rating']==3)?'selected':''; ?>>Buono</option>
-                            </select>
-                        </form>
-                    <?php endif; ?>
-                </div>
-            </div>
-        <?php endforeach; ?>
+            <?php endforeach; ?>
+        </div>
 
         <!-- 4. STRUMENTI DI EMERGENZA -->
         <h2 class="section-title" style="color: #dc3545; margin-top: 40px;">Strumenti di Emergenza</h2>
@@ -196,6 +258,7 @@
         function inviaSostituzione(filaNome) {
             const form = document.getElementById('form-sostituzione');
             const select = document.getElementById('select-team');
+            const inputKartLasciato = document.getElementById('numero_kart_lasciato');
             
             if(!select.value) {
                 alert("Seleziona un Team prima di cliccare sulla Fila.");
@@ -204,15 +267,10 @@
 
             const option = select.options[select.selectedIndex];
             const haKart = option.getAttribute('data-ha-kart') === '1';
-
-            if (!haKart) {
-                const numKart = prompt("Questo team non ha un kart assegnato. Inserisci il NUMERO DEL KART che sta lasciando ai box:");
-                if (numKart) {
-                    document.getElementById('numero_kart_lasciato').value = numKart;
-                } else {
-                    alert("Operazione annullata.");
-                    return;
-                }
+            if (!haKart && !inputKartLasciato.value.trim()) {
+                alert("Inserisci il numero del kart lasciato per il team selezionato.");
+                inputKartLasciato.focus();
+                return;
             }
 
             // Aggiungiamo il campo fila_nome
@@ -224,6 +282,59 @@
             
             form.submit();
         }
+
+        function aggiornaCampoKartLasciato() {
+            const select = document.getElementById('select-team');
+            const wrap = document.getElementById('numero-kart-lasciato-wrap');
+            const input = document.getElementById('numero_kart_lasciato');
+            const option = select.options[select.selectedIndex];
+            const haKart = option && option.getAttribute('data-ha-kart') === '1';
+
+            if (select.value && !haKart) {
+                wrap.style.display = 'block';
+                input.required = true;
+            } else {
+                wrap.style.display = 'none';
+                input.required = false;
+                input.value = '';
+            }
+        }
+
+        document.getElementById('select-team').addEventListener('change', aggiornaCampoKartLasciato);
+        aggiornaCampoKartLasciato();
+
+        function aggiornaSezioneDaHtml(documentoRemoto, sezioneId) {
+            const locale = document.getElementById(sezioneId);
+            const remota = documentoRemoto.getElementById(sezioneId);
+            if (!locale || !remota) {
+                return;
+            }
+
+            // Non rimpiazziamo la sezione se l'utente sta scrivendo dentro un form/input.
+            const attivo = document.activeElement;
+            if (attivo && locale.contains(attivo)) {
+                return;
+            }
+
+            locale.innerHTML = remota.innerHTML;
+        }
+
+        function pollingPaginaSpotter() {
+            fetch(window.location.href)
+                .then(function (response) { return response.text(); })
+                .then(function (html) {
+                    const parser = new DOMParser();
+                    const documentoRemoto = parser.parseFromString(html, 'text/html');
+                    aggiornaSezioneDaHtml(documentoRemoto, 'refresh-stato-box');
+                    aggiornaSezioneDaHtml(documentoRemoto, 'refresh-lista-team');
+                    aggiornaSezioneDaHtml(documentoRemoto, 'refresh-file-kart');
+                })
+                .catch(function (errore) {
+                    console.error('Errore polling spotter:', errore);
+                });
+        }
+
+        setInterval(pollingPaginaSpotter, 5000);
     </script>
 </body>
 </html>

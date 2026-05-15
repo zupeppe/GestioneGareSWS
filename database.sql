@@ -10,6 +10,8 @@ CREATE TABLE gare (
     tempo_minimo_pit INT DEFAULT 0,
     durata_max_stint INT DEFAULT 0,
     durata_min_stint INT,
+    tempo_max_pilota INT DEFAULT 0 COMMENT 'Tempo massimo di guida per pilota (minuti)',
+    tempo_min_pilota INT DEFAULT 0 COMMENT 'Tempo minimo di guida per pilota (minuti)',
     stato ENUM('setup', 'in_corso', 'finita') DEFAULT 'setup',
     mio_team_id INT DEFAULT NULL,
     FOREIGN KEY (mio_team_id) REFERENCES teams(id) ON DELETE SET NULL
@@ -31,6 +33,7 @@ CREATE TABLE iscritti_gara (
     gara_id INT NOT NULL,
     team_id INT NOT NULL,
     numero_gara INT,
+    is_gestito TINYINT DEFAULT 0 COMMENT '0: non gestito, 1: team della nostra scuderia',
     FOREIGN KEY (gara_id) REFERENCES gare(id) ON DELETE CASCADE,
     FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
@@ -39,7 +42,7 @@ CREATE TABLE kart_gara (
     id INT AUTO_INCREMENT PRIMARY KEY,
     gara_id INT NOT NULL,
     numero_kart INT NOT NULL,
-    rating TINYINT DEFAULT 0 COMMENT '0: ignoto, 1: scarso, 2: medio, 3: buono',
+    rating TINYINT DEFAULT 0 COMMENT '0: ignoto, 1: scarso, 2: medio, 3: buono, 4: bomba, 5: best lap',
     ultima_fila VARCHAR(50),
     note TEXT,
     FOREIGN KEY (gara_id) REFERENCES gare(id) ON DELETE CASCADE
@@ -49,12 +52,15 @@ CREATE TABLE stint_mio_team (
     id INT AUTO_INCREMENT PRIMARY KEY,
     gara_id INT NOT NULL,
     pilota_id INT NOT NULL,
+    team_id INT NULL,
     kart_id INT,
     minuto_ingresso INT DEFAULT 0,
     durata_minuti INT,
     note TEXT,
+    cancellato TINYINT(1) DEFAULT 0 NOT NULL COMMENT '0=attivo, 1=cancellato soft',
     FOREIGN KEY (gara_id) REFERENCES gare(id) ON DELETE CASCADE,
     FOREIGN KEY (pilota_id) REFERENCES piloti_mio_team(id) ON DELETE CASCADE,
+    FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE SET NULL,
     FOREIGN KEY (kart_id) REFERENCES kart_gara(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
@@ -86,6 +92,8 @@ CREATE TABLE piloti_gara (
     id INT AUTO_INCREMENT PRIMARY KEY,
     gara_id INT NOT NULL,
     pilota_id INT NOT NULL,
+    team_id INT NULL,
     FOREIGN KEY (gara_id) REFERENCES gare(id) ON DELETE CASCADE,
-    FOREIGN KEY (pilota_id) REFERENCES piloti_mio_team(id) ON DELETE CASCADE
+    FOREIGN KEY (pilota_id) REFERENCES piloti_mio_team(id) ON DELETE CASCADE,
+    FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
