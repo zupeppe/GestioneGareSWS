@@ -184,16 +184,32 @@
                                 <span class="pilot-time">Minuto <?php echo $data['stintAttivo']['minuto_ingresso']; ?></span>
                             </div>
                             <div style="text-align: center; margin-top: 10px;">
-                                <a href="<?php echo BASE_URL; ?>/muretto/termina/<?php echo $data['gara']['id']; ?>/<?php echo $data['stintAttivo']['id']; ?>?multi=1" 
-                                   class="btn-mini btn-stop">Termina Stint</a>
+                                <form method="POST" action="<?php echo BASE_URL; ?>/muretto/termina/<?php echo $data['gara']['id']; ?>" style="display: inline;">
+                                    <input type="hidden" name="stint_id" value="<?php echo $data['stintAttivo']['id']; ?>">
+                                    <input type="hidden" name="team_id" value="<?php echo $data['team']['team_id']; ?>">
+                                    <input type="hidden" name="multi" value="1">
+                                    <input type="text" name="durata" placeholder="HH:MM" required style="width: 70px; margin-right: 5px;">
+                                    <button type="submit" class="btn-mini btn-stop">Termina</button>
+                                </form>
                             </div>
                         <?php else: ?>
                             <div style="text-align: center; color: #666; padding: 10px;">
                                 Nessun pilota in pista
                             </div>
                             <div style="text-align: center; margin-top: 10px;">
-                                <a href="<?php echo BASE_URL; ?>/muretto/inizia/<?php echo $data['gara']['id']; ?>?multi=1" 
-                                   class="btn-mini btn-start">Inizia Stint</a>
+                                <form method="POST" action="<?php echo BASE_URL; ?>/muretto/inizia/<?php echo $data['gara']['id']; ?>" style="display: inline;">
+                                    <input type="hidden" name="team_id" value="<?php echo $data['team']['team_id']; ?>">
+                                    <input type="hidden" name="multi" value="1">
+                                    <select name="pilota_id" required style="margin-right: 5px;">
+                                        <option value="">Seleziona pilota</option>
+                                        <?php foreach ($data['roster'] as $pilota): ?>
+                                            <option value="<?php echo $pilota['pilota_id']; ?>">
+                                                <?php echo htmlspecialchars($pilota['cognome'] . ' ' . $pilota['nome']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <button type="submit" class="btn-mini btn-start">Inizia</button>
+                                </form>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -259,6 +275,19 @@
                     // Aggiorna pilota in pista
                     const pilotaSection = column.querySelector('.mini-section');
                     if (pilotaSection) {
+                        // Salva i valori dei form prima di aggiornare
+                        const existingForm = pilotaSection.querySelector('form');
+                        let selectedPilotaId = '';
+                        let durataValue = '';
+                        
+                        if (existingForm) {
+                            const selectPilota = existingForm.querySelector('select[name="pilota_id"]');
+                            const inputDurata = existingForm.querySelector('input[name="durata"]');
+                            
+                            if (selectPilota) selectedPilotaId = selectPilota.value;
+                            if (inputDurata) durataValue = inputDurata.value;
+                        }
+                        
                         if (team.stintAttivo) {
                             pilotaSection.innerHTML = `
                                 <h4>Pilota in pista</h4>
@@ -267,19 +296,39 @@
                                     <span class="pilot-time">Minuto ${team.stintAttivo.minuto_ingresso}</span>
                                 </div>
                                 <div style="text-align: center; margin-top: 10px;">
-                                    <a href="<?php echo BASE_URL; ?>/muretto/termina/<?php echo $gara['id']; ?>/${team.stintAttivo.id}?multi=1" 
-                                       class="btn-mini btn-stop">Termina Stint</a>
+                                    <form method="POST" action="<?php echo BASE_URL; ?>/muretto/termina/<?php echo $gara['id']; ?>" style="display: inline;">
+                                        <input type="hidden" name="stint_id" value="${team.stintAttivo.id}">
+                                        <input type="hidden" name="team_id" value="${team.team_id}">
+                                        <input type="hidden" name="multi" value="1">
+                                        <input type="text" name="durata" placeholder="HH:MM" value="${durataValue}" required style="width: 70px; margin-right: 5px;">
+                                        <button type="submit" class="btn-mini btn-stop">Termina</button>
+                                    </form>
                                 </div>
                             `;
                         } else {
+                            // Genera options per la select dei piloti
+                            let pilotOptions = '<option value="">Seleziona pilota</option>';
+                            if (team.roster) {
+                                team.roster.forEach(pilota => {
+                                    const selected = pilota.pilota_id == selectedPilotaId ? 'selected' : '';
+                                    pilotOptions += `<option value="${pilota.pilota_id}" ${selected}>${pilota.cognome} ${pilota.nome}</option>`;
+                                });
+                            }
+                            
                             pilotaSection.innerHTML = `
                                 <h4>Pilota in pista</h4>
                                 <div style="text-align: center; color: #666; padding: 10px;">
                                     Nessun pilota in pista
                                 </div>
                                 <div style="text-align: center; margin-top: 10px;">
-                                    <a href="<?php echo BASE_URL; ?>/muretto/inizia/<?php echo $gara['id']; ?>?multi=1" 
-                                       class="btn-mini btn-start">Inizia Stint</a>
+                                    <form method="POST" action="<?php echo BASE_URL; ?>/muretto/inizia/<?php echo $gara['id']; ?>" style="display: inline;">
+                                        <input type="hidden" name="team_id" value="${team.team_id}">
+                                        <input type="hidden" name="multi" value="1">
+                                        <select name="pilota_id" required style="margin-right: 5px;">
+                                            ${pilotOptions}
+                                        </select>
+                                        <button type="submit" class="btn-mini btn-start">Inizia</button>
+                                    </form>
                                 </div>
                             `;
                         }
@@ -288,11 +337,17 @@
                     // Aggiorna strategia
                     const strategiaSection = column.querySelectorAll('.mini-section')[1];
                     if (strategiaSection && team.strategia) {
+                        // Formatta il tempo in HH:MM come nell'HTML statico
+                        const tempoFormattato = team.strategia.tempo_massimo_copribile > 0 ? 
+                            Math.floor(team.strategia.tempo_massimo_copribile / 60) + ':' + 
+                            String(team.strategia.tempo_massimo_copribile % 60).padStart(2, '0') : 
+                            '0:00';
+                        
                         strategiaSection.innerHTML = `
                             <h4>Strategia</h4>
                             <div class="strategia-info">
                                 <div>Pit residui: <strong>${team.strategia.pit_rimanenti_obbligatori}</strong></div>
-                                <div>Tempo max copribile: <strong>${team.strategia.tempo_massimo_copribile}</strong></div>
+                                <div>Tempo max copribile: <strong>${tempoFormattato}</strong></div>
                                 <div>Jolly residui: <span class="jolly-count">${team.strategia.jolly_disponibili}</span></div>
                                 <div>Stato: <strong style="color: ${team.strategia.colore_strategia};">${team.strategia.stato_strategia}</strong></div>
                             </div>
