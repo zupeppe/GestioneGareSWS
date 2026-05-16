@@ -2,19 +2,17 @@
 
 # Task Attuali e Futuri
 
-## Sprint 5.3: Multi-Team e Home Redesign (ATTUALE)
-- [ ] **Database:** Aggiungere colonna `is_gestito` (BOOLEAN) alla tabella `iscritti_gara` per marcare quali team sono della nostra scuderia.
-- [ ] **Setup Gara:** Permettere di selezionare fino a 4 team come "gestiti" tramite checkbox o selezione multipla.
-- [ ] **Muretto Multi-Team:** - Creare vista `muretto/multi.php` con layout a colonne (una colonna per team).
-    - Permettere di gestire stint/cambi separatamente per ogni team nella stessa pagina.
-- [ ] **Home Page Redesign:** - Layout schematico con "Nuova Gara", "Gare in Corso" e "Anagrafiche".
-    - Link grafici chiari per Gestione Piloti e Gestione Team.
+# Task Sprint 6: Sicurezza e Autenticazione
 
-## Sprint 6: Sicurezza e Autenticazione (ATTUALE)
-- [ ] Creare tabella `utenti` nel database (campi: id, username, password_hash, ruolo).
-- [ ] Implementare LoginController e vista di login.
-- [ ] Creare middleware/filtro per proteggere le rotte in base al ruolo (Admin, Muretto, Spotter).
-
+- [ ] **Database:** Creare tabella `utenti` (id, username, password_hash, ruolo). Ruoli: `admin`, `team_manager`, `muretto`, `spotter`.
+- [ ] **Auth:** Login/Logout con `password_verify`. Admin di default: `admin` / `123qweASD`.
+- [ ] **Gestione Utenti:** Creare una vista accessibile SOLO dall'Admin per creare utenti e resettare password.
+- [ ] **Controllo Ruoli (RBAC):**
+    - `admin`: Accesso totale (inclusa gestione utenti).
+    - `team_manager`: Accesso a tutto il software (Gare, Muretti, Spotter, Anagrafiche) TRANNE gestione utenti/password.
+    - `muretto`: Accesso a Muretti, Spotter e Home. Bloccato su Setup Gara e Anagrafiche.
+    - `spotter`: Accesso ESCLUSIVO alla pagina Spotter e Home.
+    
 ## Sprint 7: Test e Deploy (Futuro)
 - [ ] Simulazione gara completa multi-dispositivo.
 - [ ] Preparazione ambiente di produzione.

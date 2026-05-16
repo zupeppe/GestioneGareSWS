@@ -38,6 +38,48 @@ $urlParts = explode('/', filter_var($url, FILTER_SANITIZE_URL));
 $controllerName = ucfirst($urlParts[0]) . 'Controller';
 $methodName = isset($urlParts[1]) ? $urlParts[1] : 'index';
 
+// --- INIZIO BLOCCO AUTH & RBAC ---
+$isLoggedIn = isset($_SESSION['utente']) && !empty($_SESSION['utente']);
+$ruolo = $isLoggedIn ? $_SESSION['utente']['ruolo'] : null;
+
+// Se non è loggato e non sta cercando di accedere ad AuthController, reindirizza al login
+if (!$isLoggedIn && $controllerName !== 'AuthController') {
+    header('Location: ' . BASE_URL . '/auth/login');
+    exit;
+}
+
+// Controllo ruoli (RBAC)
+if ($isLoggedIn) {
+    $accessoNegato = false;
+    
+    if ($ruolo === 'admin') {
+        // Accesso totale
+    } elseif ($ruolo === 'team_manager') {
+        // Tutto tranne gestione utenti
+        if ($controllerName === 'UserController') {
+            $accessoNegato = true;
+        }
+    } elseif ($ruolo === 'muretto') {
+        // Solo Muretto, Spotter, Home, Auth
+        $allowed = ['MurettoController', 'SpotterController', 'HomeController', 'AuthController'];
+        if (!in_array($controllerName, $allowed)) {
+            $accessoNegato = true;
+        }
+    } elseif ($ruolo === 'spotter') {
+        // Solo Spotter, Home, Auth
+        $allowed = ['SpotterController', 'HomeController', 'AuthController'];
+        if (!in_array($controllerName, $allowed)) {
+            $accessoNegato = true;
+        }
+    }
+
+    if ($accessoNegato) {
+        header('Location: ' . BASE_URL . '/home');
+        exit;
+    }
+}
+// --- FINE BLOCCO AUTH & RBAC ---
+
 $controllerClass = "App\\Controllers\\" . $controllerName;
 $controllerPath = BASE_PATH . '/app/Controllers/' . $controllerName . '.php';
 
