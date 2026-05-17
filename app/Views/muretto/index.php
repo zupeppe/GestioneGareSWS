@@ -39,7 +39,7 @@
         .layout-muretto { display: flex; gap: 20px; flex-wrap: wrap; }
         .colonna-stint { flex: 2; min-width: 350px; }
         .colonna-radar { flex: 1; min-width: 250px; }
-        @media (max-width: 1024px) {
+        @media (max-width: 1200px) {
             .colonna-stint, .colonna-radar { flex: 1 1 100%; min-width: 100%; }
         }
         .riga-allerta { background-color: #f8d7da !important; color: #721c24; border: 2px solid #f5c6cb; }
@@ -51,7 +51,7 @@
         .rating-2 { background: #ffc107; color: #000; }
         .rating-3 { background: #28a745; color: #fff; }
         .rating-4 { background: #28a745; color: #fff; }
-        .rating-5 { background: #28a745; color: #fff; }
+        .rating-bestlap { background: #6b21a8 !important; color: #fff !important; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); }
         
         .stint-cancellato { background: #f8d7da !important; opacity: 0.7; }
         .stint-cancellato td { text-decoration: line-through; color: #721c24; }
@@ -71,8 +71,7 @@
             if ($r === 1) { $class = 'rating-1'; $text = 'Scarso'; }
             elseif ($r === 2) { $class = 'rating-2'; $text = 'Medio'; }
             elseif ($r === 3) { $class = 'rating-3'; $text = 'Buono'; }
-            elseif ($r === 4) { $class = 'rating-4'; $text = '💣 Bomba'; }
-            elseif ($r === 5) { $class = 'rating-5'; $text = '🏆 Best Lap'; }
+            elseif ($r === 5) { $class = 'rating-bestlap'; $text = '🏆 Best Lap'; }
             return "<span class=\"rating-badge $class\">$text</span>";
         }
         ?>
@@ -121,6 +120,7 @@
                 <h3 style="margin-top:0;">Pannello Strategia</h3>
                 <div style="margin-bottom: 5px;">Pit obbligatori rimanenti: <strong><?php echo htmlspecialchars($strategia['pit_rimanenti_obbligatori']); ?></strong></div>
                 <div style="margin-bottom: 5px;">Tempo Max Copribile: <strong><?php echo htmlspecialchars(\App\Core\TimeHelper::daMinutiaHHMM($strategia['tempo_massimo_copribile'])); ?></strong></div>
+                <div style="margin-bottom: 5px;">Tempo Eccedente: <strong><?= $strategia['tempo_eccedente_formattato'] ?></strong></div>
                 <div style="margin-bottom: 5px;">Media Stint Ideale: <strong><?php echo htmlspecialchars($strategia['media_stint_formattata']) ?></strong></div>
                 <div>
                     Stato: <strong style="color: <?php echo $strategia['colore_strategia']; ?>;"><?php echo htmlspecialchars($strategia['stato_strategia']); ?></strong>
@@ -274,6 +274,7 @@
             <!-- Colonna 1: Timeline (70%) -->
             <div class="colonna-stint" id="refresh-storico-stint">
                 <h2>Storico Stint (Timeline a Cascata)</h2>
+                <div class="table-responsive" style="overflow-x: auto;">
                 <table>
                     <thead>
                         <tr>
@@ -364,6 +365,7 @@
                         <?php endif; ?>
                     </tbody>
                 </table>
+                </div>
             </div>
 
             <!-- Sezione Stint Cancellati -->
@@ -371,6 +373,7 @@
                 <div style="margin-top: 20px; padding: 15px; background: #fff5f5; border: 2px dashed #dc3545; border-radius: 8px;">
                     <h3 style="color: #dc3545; margin: 0 0 15px 0;">🗑️ Stint Cancellati</h3>
                     <p style="color: #721c24; font-size: 0.9em; margin: 0 0 15px 0;">Questi stint sono stati cancellati ma possono essere ripristinati.</p>
+                    <div class="table-responsive" style="overflow-x: auto;">
                     <table style="width: 100%; border-collapse: collapse;">
                         <thead>
                             <tr style="background: #f8d7da;">
@@ -414,6 +417,7 @@
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             <?php endif; ?>
 

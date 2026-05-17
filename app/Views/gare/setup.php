@@ -127,8 +127,8 @@
             </div>
         <?php endif; ?>
 
-        <div class="grid-container <?php echo $haStintAttivi ? 'setup-bloccato' : ''; ?>">
-            <!-- SEZIONE 1: Parametri Gara -->
+        <div class="grid-container <?php echo $haStintAttivi ? 'setup-bloccato' : ''; ?>
+<!-- SEZIONE 1: Parametri Gara -->
             <div class="form-section avviso-gara-corso" style="<?php echo $haStintAttivi ? 'opacity: 0.6; pointer-events: none;' : ''; ?>">
                 <h2>1. Parametri Gara</h2>
                 <form action="<?php echo BASE_URL; ?>/gare/aggiornaParametri" method="POST" id="form-parametri-gara">
@@ -178,9 +178,123 @@
                 </form>
             </div>
 
-            <!-- SEZIONE 2: Roster Piloti Team -->
+            <!-- SEZIONE 2: Configurazione Box -->
+            <div class="form-section avviso-gara-corso" style="<?php echo $haStintAttivi ? 'opacity: 0.6; pointer-events: none;' : ''; ?>">
+                <h2>2. Configurazione Box</h2>
+                <form action="<?php echo BASE_URL; ?>/gare/aggiungiFilaPit" method="POST" id="form-aggiungi-fila-pit">
+                    <input type="hidden" name="gara_id" value="<?php echo $gara['id']; ?>">
+                    <div class="form-group" style="display:flex; gap:15px; align-items:flex-end; flex-wrap: nowrap;">
+                        <div style="flex:1;">
+                            <label for="nome_colore">Nome Fila:</label>
+                            <input type="text" id="nome_colore" name="nome_colore" placeholder="Es. Rossa, Blu..." required style="height: 45px;">
+                        </div>
+                        <div style="flex-shrink: 0;">
+                            <label for="colore_hex">Colore:</label>
+                            <input type="color" id="colore_hex" name="colore_hex" value="#343a40" style="padding:0; height:45px; width:80px; border:2px solid #ccc; border-radius:4px; cursor:pointer;">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="ordine">Ordine (Opzionale):</label>
+                        <input type="number" id="ordine" name="ordine" value="0">
+                    </div>
+                    <button type="button" class="btn" id="btn-aggiungi-fila-pit">Aggiungi fila</button>
+                </form>
+
+                <table style="margin-top: 10px; <?php echo empty($filePit) ? 'display:none;' : ''; ?>" id="tabella-file-pit">
+                    <thead><tr><th>Fila</th><th>Ordine</th><th>Azioni</th></tr></thead>
+                    <tbody id="tbody-file-pit">
+                        <?php foreach ($filePit as $fp): ?>
+                            <tr id="fila-row-<?php echo (int)$fp['id']; ?>" data-fila-id="<?php echo (int)$fp['id']; ?>">
+                                <td>
+                                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                        <span class="js-fila-anteprima-colore" style="display:inline-block; width:15px; height:15px; background:<?php echo htmlspecialchars($fp['colore_hex']); ?>; border-radius:50%; vertical-align:middle; border:1px solid #333;"></span>
+                                        <input type="text" class="js-fila-nome-input" value="<?php echo htmlspecialchars($fp['nome_colore']); ?>" maxlength="120" style="padding:6px 8px; flex:1; min-width:100px; max-width:220px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box;">
+                                        <input type="color" class="js-fila-colore-input" value="<?php echo htmlspecialchars($fp['colore_hex']); ?>" title="Colore fila" aria-label="Colore fila" style="padding:0; height:32px; width:44px; border:1px solid #ccc; border-radius:4px; cursor:pointer;">
+                                    </div>
+                                </td>
+                                <td><?php echo htmlspecialchars($fp['ordine']); ?></td>
+                                <td>
+                                    <a href="<?php echo BASE_URL; ?>/gare/rimuoviFilaPit/<?php echo $fp['id']; ?>/<?php echo $gara['id']; ?>" class="btn btn-danger js-rimuovi-fila" style="text-decoration:none; padding:5px 10px; font-size:0.9em; border-radius:4px;">Rimuovi</a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                <p style="font-size: 0.9em; margin-top: 10px; <?php echo !empty($filePit) ? 'display:none;' : ''; ?>" id="empty-file-pit">Nessuna fila configurata.</p>
+            </div>
+
+            <!-- SEZIONE 3: Iscrizione Team (Avversari) -->
+            <div class="form-section avviso-gara-corso" style="<?php echo $haStintAttivi ? 'opacity: 0.6; pointer-events: none;' : ''; ?>">
+                <h2>3. Iscrizione Team alla Gara</h2>
+                <form action="<?php echo BASE_URL; ?>/gare/iscriviTeam" method="POST" id="form-iscrivi-team">
+                    <input type="hidden" name="gara_id" value="<?php echo $gara['id']; ?>">
+                    
+                    <div class="form-group" style="display: flex; align-items: flex-end; gap: 15px; flex-wrap: nowrap;">
+                        <div style="flex-grow: 1;">
+                            <label for="team_id">Team:</label>
+                            <select id="team_id" name="team_id" required style="height: 45px; font-size: 1.1em;">
+                                <option value="">-- Seleziona un Team --</option>
+                                <?php foreach ($teams as $team): ?>
+                                    <option value="<?php echo $team['id']; ?>">
+                                        <?php echo htmlspecialchars($team['nome_team']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div style="flex-shrink: 0;">
+                            <button type="button" class="btn btn-secondary" onclick="openModal('modal-nuovo-team')" style="background:#6c757d; height: 45px; line-height: 45px; padding: 0 20px; font-size: 1.1em; font-weight: bold; border-radius: 4px; display: inline-block;">+ Nuovo Team</button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="numero_gara">Numero di Gara (Kart/Team):</label>
+                        <input type="number" id="numero_gara" name="numero_gara" required>
+                    </div>
+                    
+                    <button type="button" class="btn" id="btn-aggiungi-iscrizione-team">Aggiungi iscrizione</button>
+                </form>
+            </div>
+        </div>
+
+                </div>
+
+        <hr>
+
+        <h2>4. Scelta dei team da gestire (Riepilogo Iscritti)</h2>
+        <table id="tabella-iscritti" style="<?php echo empty($iscritti) ? 'display:none;' : ''; ?>">
+            <thead>
+                <tr>
+                    <th>Numero Gara</th>
+                    <th>Nome Team</th>
+                    <th>Gestito</th>
+                    <th>Azioni</th>
+                </tr>
+            </thead>
+            <tbody id="tbody-iscritti">
+                <?php foreach ($iscritti as $iscritto): ?>
+                    <tr id="iscrizione-row-<?php echo (int)$iscritto['id']; ?>" data-iscrizione-id="<?php echo (int)$iscritto['id']; ?>" data-team-id="<?php echo (int)$iscritto['team_id']; ?>" data-nome-team="<?php echo htmlspecialchars($iscritto['nome_team'], ENT_QUOTES, 'UTF-8'); ?>" data-numero-gara="<?php echo htmlspecialchars($iscritto['numero_gara'], ENT_QUOTES, 'UTF-8'); ?>">
+                        <td><?php echo htmlspecialchars($iscritto['numero_gara']); ?></td>
+                        <td><?php echo htmlspecialchars($iscritto['nome_team']); ?></td>
+                        <td>
+                            <input type="checkbox" 
+                                   class="checkbox-gestito" 
+                                   data-iscritto-id="<?php echo (int)$iscritto['id']; ?>" 
+                                   <?php echo ($iscritto['is_gestito'] == 1) ? 'checked' : ''; ?>>
+                        </td>
+                        <td>
+                            <a href="<?php echo BASE_URL; ?>/gare/modificaIscrizione/<?php echo $iscritto['id']; ?>" class="btn" style="background:#ffc107; color:black; text-decoration:none; padding:5px 10px; font-size:0.9em; border-radius:4px;">Modifica</a>
+                            <a href="<?php echo BASE_URL; ?>/gare/rimuoviIscrizione/<?php echo $iscritto['id']; ?>/<?php echo $gara['id']; ?>" class="btn btn-danger js-rimuovi-iscrizione" style="text-decoration:none; padding:5px 10px; font-size:0.9em; border-radius:4px; color:white;">Rimuovi</a>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        <p id="empty-iscritti" style="<?php echo !empty($iscritti) ? 'display:none;' : ''; ?>">Nessun team ancora iscritto a questa gara.</p>
+    </div>
+
+    <!-- SEZIONE 5: Roster Piloti Team -->
             <div class="modern-form-card avviso-gara-corso" style="<?php echo $haStintAttivi ? 'opacity: 0.6; pointer-events: none;' : ''; ?>">
-                <h2>2. Roster Piloti Team</h2>
+                <h2>5. Roster Piloti Team</h2>
                 <form action="<?php echo BASE_URL; ?>/gare/aggiungiPilotaGara" method="POST" id="form-aggiungi-pilota">
                     <input type="hidden" name="gara_id" value="<?php echo $gara['id']; ?>">
                     <div class="form-group" style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 0;">
@@ -227,117 +341,7 @@
                 </div>
             </div>
 
-            <!-- SEZIONE 3: Configurazione Box -->
-            <div class="form-section avviso-gara-corso" style="<?php echo $haStintAttivi ? 'opacity: 0.6; pointer-events: none;' : ''; ?>">
-                <h2>3. Configurazione Box</h2>
-                <form action="<?php echo BASE_URL; ?>/gare/aggiungiFilaPit" method="POST" id="form-aggiungi-fila-pit">
-                    <input type="hidden" name="gara_id" value="<?php echo $gara['id']; ?>">
-                    <div class="form-group" style="display:flex; gap:10px; align-items:flex-end;">
-                        <div style="flex:1;">
-                            <label for="nome_colore">Nome Fila:</label>
-                            <input type="text" id="nome_colore" name="nome_colore" placeholder="Es. Rossa, Blu..." required>
-                        </div>
-                        <div>
-                            <label for="colore_hex">Colore:</label>
-                            <input type="color" id="colore_hex" name="colore_hex" value="#343a40" style="padding:0; height:35px; width:50px; border:1px solid #ccc; border-radius:4px; cursor:pointer;">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="ordine">Ordine (Opzionale):</label>
-                        <input type="number" id="ordine" name="ordine" value="0">
-                    </div>
-                    <button type="button" class="btn" id="btn-aggiungi-fila-pit">Aggiungi fila</button>
-                </form>
-
-                <table style="margin-top: 10px; <?php echo empty($filePit) ? 'display:none;' : ''; ?>" id="tabella-file-pit">
-                    <thead><tr><th>Fila</th><th>Ordine</th><th>Azioni</th></tr></thead>
-                    <tbody id="tbody-file-pit">
-                        <?php foreach ($filePit as $fp): ?>
-                            <tr id="fila-row-<?php echo (int)$fp['id']; ?>" data-fila-id="<?php echo (int)$fp['id']; ?>">
-                                <td>
-                                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                                        <span class="js-fila-anteprima-colore" style="display:inline-block; width:15px; height:15px; background:<?php echo htmlspecialchars($fp['colore_hex']); ?>; border-radius:50%; vertical-align:middle; border:1px solid #333;"></span>
-                                        <input type="text" class="js-fila-nome-input" value="<?php echo htmlspecialchars($fp['nome_colore']); ?>" maxlength="120" style="padding:6px 8px; flex:1; min-width:100px; max-width:220px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box;">
-                                        <input type="color" class="js-fila-colore-input" value="<?php echo htmlspecialchars($fp['colore_hex']); ?>" title="Colore fila" aria-label="Colore fila" style="padding:0; height:32px; width:44px; border:1px solid #ccc; border-radius:4px; cursor:pointer;">
-                                    </div>
-                                </td>
-                                <td><?php echo htmlspecialchars($fp['ordine']); ?></td>
-                                <td>
-                                    <a href="<?php echo BASE_URL; ?>/gare/rimuoviFilaPit/<?php echo $fp['id']; ?>/<?php echo $gara['id']; ?>" class="btn btn-danger js-rimuovi-fila" style="text-decoration:none; padding:5px 10px; font-size:0.9em; border-radius:4px;">Rimuovi</a>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-                <p style="font-size: 0.9em; margin-top: 10px; <?php echo !empty($filePit) ? 'display:none;' : ''; ?>" id="empty-file-pit">Nessuna fila configurata.</p>
-            </div>
-
-            <!-- SEZIONE 4: Iscrizione Team (Avversari) -->
-            <div class="form-section avviso-gara-corso" style="<?php echo $haStintAttivi ? 'opacity: 0.6; pointer-events: none;' : ''; ?>">
-                <h2>4. Iscrizione Team alla Gara</h2>
-                <form action="<?php echo BASE_URL; ?>/gare/iscriviTeam" method="POST" id="form-iscrivi-team">
-                    <input type="hidden" name="gara_id" value="<?php echo $gara['id']; ?>">
-                    
-                    <div class="form-group" style="display: flex; align-items: flex-end; gap: 10px;">
-                        <div style="flex-grow: 1;">
-                            <label for="team_id">Team:</label>
-                            <select id="team_id" name="team_id" required>
-                                <option value="">-- Seleziona un Team --</option>
-                                <?php foreach ($teams as $team): ?>
-                                    <option value="<?php echo $team['id']; ?>">
-                                        <?php echo htmlspecialchars($team['nome_team']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div>
-                            <button type="button" class="btn btn-secondary" onclick="openModal('modal-nuovo-team')" style="background:#6c757d; height: 35px; line-height: 15px;">+ Nuovo</button>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="numero_gara">Numero di Gara (Kart/Team):</label>
-                        <input type="number" id="numero_gara" name="numero_gara" required>
-                    </div>
-                    
-                    <button type="button" class="btn" id="btn-aggiungi-iscrizione-team">Aggiungi iscrizione</button>
-                </form>
-            </div>
-        </div>
-
-        <hr>
-
-        <h2>Riepilogo Team Iscritti</h2>
-        <table id="tabella-iscritti" style="<?php echo empty($iscritti) ? 'display:none;' : ''; ?>">
-            <thead>
-                <tr>
-                    <th>Numero Gara</th>
-                    <th>Nome Team</th>
-                    <th>Gestito</th>
-                    <th>Azioni</th>
-                </tr>
-            </thead>
-            <tbody id="tbody-iscritti">
-                <?php foreach ($iscritti as $iscritto): ?>
-                    <tr id="iscrizione-row-<?php echo (int)$iscritto['id']; ?>" data-iscrizione-id="<?php echo (int)$iscritto['id']; ?>" data-team-id="<?php echo (int)$iscritto['team_id']; ?>" data-nome-team="<?php echo htmlspecialchars($iscritto['nome_team'], ENT_QUOTES, 'UTF-8'); ?>" data-numero-gara="<?php echo htmlspecialchars($iscritto['numero_gara'], ENT_QUOTES, 'UTF-8'); ?>">
-                        <td><?php echo htmlspecialchars($iscritto['numero_gara']); ?></td>
-                        <td><?php echo htmlspecialchars($iscritto['nome_team']); ?></td>
-                        <td>
-                            <input type="checkbox" 
-                                   class="checkbox-gestito" 
-                                   data-iscritto-id="<?php echo (int)$iscritto['id']; ?>" 
-                                   <?php echo ($iscritto['is_gestito'] == 1) ? 'checked' : ''; ?>>
-                        </td>
-                        <td>
-                            <a href="<?php echo BASE_URL; ?>/gare/modificaIscrizione/<?php echo $iscritto['id']; ?>" class="btn" style="background:#ffc107; color:black; text-decoration:none; padding:5px 10px; font-size:0.9em; border-radius:4px;">Modifica</a>
-                            <a href="<?php echo BASE_URL; ?>/gare/rimuoviIscrizione/<?php echo $iscritto['id']; ?>/<?php echo $gara['id']; ?>" class="btn btn-danger js-rimuovi-iscrizione" style="text-decoration:none; padding:5px 10px; font-size:0.9em; border-radius:4px; color:white;">Rimuovi</a>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-        <p id="empty-iscritti" style="<?php echo !empty($iscritti) ? 'display:none;' : ''; ?>">Nessun team ancora iscritto a questa gara.</p>
-    </div>
+                </div>
 
     <!-- Modale Nuovo Team -->
     <div id="modal-nuovo-team" class="modal">

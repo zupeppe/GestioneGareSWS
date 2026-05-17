@@ -148,6 +148,15 @@ class MurettoController {
         }
         $media_stint_formattata = sprintf("%02d:%02d", $minuti_media, $secondi_media);
 
+        // Calcolo Tempo Eccedente
+        $tempo_eccedente = $minutiResidui - $tempo_massimo_copribile_totale;
+        if ($tempo_eccedente < 0) {
+            $tempo_eccedente = 0;
+        }
+        $ore_eccedenti = floor($tempo_eccedente / 60);
+        $min_eccedenti = $tempo_eccedente % 60;
+        $tempo_eccedente_formattato = sprintf("%02d:%02d", $ore_eccedenti, $min_eccedenti);
+
         return [
             'pit_fatti' => $pit_fatti,
             'pit_minimi' => $pit_obbligatori,
@@ -158,7 +167,8 @@ class MurettoController {
             'colore_strategia' => $colore_strategia,
             'jolly_disponibili' => $jolly_disponibili,
             'pit_extra_necessari' => $pit_extra_necessari,
-            'media_stint_formattata' => $media_stint_formattata
+            'media_stint_formattata' => $media_stint_formattata,
+            'tempo_eccedente_formattato' => $tempo_eccedente_formattato
         ];
     }
 

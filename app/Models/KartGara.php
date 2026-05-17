@@ -51,25 +51,46 @@ class KartGara {
         return (int)$this->db->lastInsertId();
     }
 
-    /**
+   /**
      * Inizializza i kart fittizi per la gara se non esistono.
+     * Ora controlla singolarmente ogni team e ogni fila!
      */
     public function inizializzaGaraSeNecessario($gara_id, $iscritti, $file) {
-        $sql = "SELECT COUNT(*) FROM kart_gara WHERE gara_id = :gara_id";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([':gara_id' => $gara_id]);
-        if ($stmt->fetchColumn() == 0) {
-            // Crea un kart per ogni team (numero_kart = iscritto_id)
-            foreach ($iscritti as $iscritto) {
-                $this->creaIniziale($gara_id, $iscritto['id'], null);
+        
+        // 1. Inizializza i kart fittizi iniziali per i team (solo se a questo specifico team manca)
+        foreach ($iscritti as $iscritto) {
+            
+            // Usa il numero di gara del team se inserito, altrimenti usa l'ID interno come paracadute
+            $numero_team = !empty($iscritto['numero_gara']) ? $iscritto['numero_gara'] : $iscritto['id'];
+            
+            $sql = "SELECT id FROM kart_gara WHERE gara_id = :gara_id AND numero_kart = :numero_kart LIMIT 1";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':gara_id' => $gara_id, ':numero_kart' => $numero_team]);
+            
+            if (!$stmt->fetch()) {
+                // Se questo team non ha il kart, lo crea!
+                $this->creaIniziale($gara_id, $numero_team, null);
             }
-            // Crea un kart per ogni fila (numero_kart = 9000 + id_fila)
-            foreach ($file as $fila) {
-                $this->creaIniziale($gara_id, 9000 + $fila['id'], $fila['nome_colore']);
+        }
+
+        // 2. Inizializza i kart per le file (solo per quelle che risultano vuote)
+        foreach ($file as $fila) {
+            $sql = "SELECT id FROM kart_gara WHERE gara_id = :gara_id AND ultima_fila = :fila LIMIT 1";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':gara_id' => $gara_id, ':fila' => $fila['nome_colore']]);
+            
+            if (!$stmt->fetch()) {
+                // Calcola il prossimo numero 900X disponibile per questa gara
+                $sqlMax = "SELECT MAX(CAST(numero_kart AS UNSIGNED)) FROM kart_gara WHERE gara_id = :gara_id AND CAST(numero_kart AS UNSIGNED) >= 9000";
+                $stmtMax = $this->db->prepare($sqlMax);
+                $stmtMax->execute([':gara_id' => $gara_id]);
+                $max = $stmtMax->fetchColumn();
+                
+                $nuovo_numero = $max ? $max + 1 : 9001;
+                $this->creaIniziale($gara_id, $nuovo_numero, $fila['nome_colore']);
             }
         }
     }
-
     /**
      * Recupera il kart parcheggiato in una determinata fila.
      */
@@ -80,7 +101,7 @@ class KartGara {
         return $stmt->fetch();
     }
 
-    /**
+   /**
      * Trova il kart che un team sta attualmente guidando.
      */
     public function ottieniKartAttualeTeam($gara_id, $iscritto_gara_id) {
@@ -96,10 +117,19 @@ class KartGara {
         if ($risultato) {
             $kart_id = $risultato['kart_preso_id'];
         } else {
-            // Se non ha mai fatto cambi, ha il suo kart iniziale (numero_kart = iscritto_gara_id)
+            // RECUPERA IL NUMERO DI GARA UFFICIALE DEL TEAM DAL DB
+            $sqlNum = "SELECT numero_gara FROM iscritti_gara WHERE id = :id";
+            $stmtNum = $this->db->prepare($sqlNum);
+            $stmtNum->execute([':id' => $iscritto_gara_id]);
+            $numero_gara = $stmtNum->fetchColumn();
+            
+            // Usa il numero_gara ufficiale, oppure l'ID se non era stato compilato nel setup
+            $numero_ricerca = !empty($numero_gara) ? $numero_gara : $iscritto_gara_id;
+
+            // Se non ha mai fatto cambi, ha il suo kart iniziale
             $sql2 = "SELECT id FROM kart_gara WHERE gara_id = :gara_id AND numero_kart = :numero_kart LIMIT 1";
             $stmt2 = $this->db->prepare($sql2);
-            $stmt2->execute([':gara_id' => $gara_id, ':numero_kart' => $iscritto_gara_id]);
+            $stmt2->execute([':gara_id' => $gara_id, ':numero_kart' => $numero_ricerca]);
             $res2 = $stmt2->fetch();
             if ($res2) {
                 $kart_id = $res2['id'];
