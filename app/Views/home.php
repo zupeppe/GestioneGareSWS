@@ -292,16 +292,27 @@
                             <div class="race-card">
                                 <div class="race-header">
                                     <span class="race-title"><?php echo htmlspecialchars($gara['nome_gara']); ?></span>
-                                    <span class="race-status status-<?php echo $gara['stato']; ?>">
-                                        <?php 
-                                        $status_labels = [
-                                            'setup' => 'Setup',
-                                            'in_corso' => 'In Corso',
-                                            'finita' => 'Finita'
-                                        ];
-                                        echo $status_labels[$gara['stato']] ?? $gara['stato'];
-                                        ?>
-                                    </span>
+                                    <?php 
+                                    $ruolo_utente = $_SESSION['utente']['ruolo'] ?? '';
+                                    $status_labels = [
+                                        'setup' => 'Setup',
+                                        'in_corso' => 'In Corso',
+                                        'finita' => 'Finita'
+                                    ];
+                                    if (in_array($ruolo_utente, ['admin', 'team_manager'])): 
+                                    ?>
+                                        <form method="POST" action="<?php echo BASE_URL; ?>/gare/cambiastato/<?php echo $gara['id']; ?>" style="margin: 0; display: inline-block;">
+                                            <select name="stato" onchange="this.form.submit()" class="race-status status-<?php echo $gara['stato']; ?>" style="border:1px solid rgba(255,255,255,0.3); cursor:pointer; outline:none; font-family:inherit; appearance:none; padding-right: 15px;">
+                                                <option value="setup" <?php echo $gara['stato'] === 'setup' ? 'selected' : ''; ?> style="color: black;">Setup</option>
+                                                <option value="in_corso" <?php echo $gara['stato'] === 'in_corso' ? 'selected' : ''; ?> style="color: black;">In Corso</option>
+                                                <option value="finita" <?php echo $gara['stato'] === 'finita' ? 'selected' : ''; ?> style="color: black;">Finita</option>
+                                            </select>
+                                        </form>
+                                    <?php else: ?>
+                                        <span class="race-status status-<?php echo $gara['stato']; ?>">
+                                            <?php echo $status_labels[$gara['stato']] ?? $gara['stato']; ?>
+                                        </span>
+                                    <?php endif; ?>
                                 </div>
                                 <div class="race-date">
                                     📅 <?php echo date('d/m/Y H:i', strtotime($gara['data_evento'])); ?>

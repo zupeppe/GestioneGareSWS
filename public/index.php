@@ -56,7 +56,7 @@ if ($isLoggedIn) {
         // Accesso totale
     } elseif ($ruolo === 'team_manager') {
         // Tutto tranne gestione utenti
-        if ($controllerName === 'UserController') {
+        if ($controllerName === 'UserController' || strtolower($controllerName) === 'admindaticontroller') {
             $accessoNegato = true;
         }
     } elseif ($ruolo === 'muretto') {

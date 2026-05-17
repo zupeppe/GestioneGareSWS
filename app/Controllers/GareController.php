@@ -45,6 +45,30 @@ class GareController {
         echo json_encode($payload);
         exit;
     }
+
+    /**
+     * Aggiorna lo stato di una gara.
+     * 
+     * @param int $gara_id ID della gara
+     * @return void
+     */
+    public function cambiaStato($gara_id) {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $nuovo_stato = $_POST['stato'] ?? '';
+            $stati_validi = ['setup', 'in_corso', 'finita'];
+            
+            if (in_array($nuovo_stato, $stati_validi)) {
+                $garaModel = new Gara();
+                $garaModel->aggiornaStato($gara_id, $nuovo_stato);
+                $_SESSION['success'] = "Stato della gara aggiornato con successo.";
+            } else {
+                $_SESSION['error'] = "Stato non valido.";
+            }
+        }
+        header('Location: ' . BASE_URL . '/home');
+        exit;
+    }
+
     /**
      * Riceve i dati in POST per creare una nuova gara e reindirizza alla home.
      * 

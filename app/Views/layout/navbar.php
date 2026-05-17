@@ -22,6 +22,7 @@
 
         <?php if ($ruolo === 'admin'): ?>
             <a href="<?php echo BASE_URL; ?>/user/index" style="color:#f9fafb; text-decoration:none; font-weight:bold;">👥 Gestione Utenti</a>
+            <a href="<?php echo BASE_URL; ?>/admindati" style="color:#f9fafb; text-decoration:none; font-weight:bold;">🛠️ Gestione Dati</a>
         <?php endif; ?>
     </div>
     

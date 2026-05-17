@@ -110,4 +110,21 @@ class Gara {
             ':mio_team_id' => (!empty($dati['mio_team_id']) ? $dati['mio_team_id'] : null)
         ]);
     }
+
+    /**
+     * Aggiorna lo stato della gara.
+     * 
+     * @param int $id L'ID della gara
+     * @param string $nuovo_stato Lo stato ('setup', 'in_corso', 'finita')
+     * @return bool
+     */
+    public function aggiornaStato($id, $nuovo_stato) {
+        $sql = "UPDATE gare SET stato = :stato WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([
+            ':stato' => $nuovo_stato,
+            ':id' => $id
+        ]);
+    }
+
 }
