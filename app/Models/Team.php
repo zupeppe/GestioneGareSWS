@@ -32,7 +32,7 @@ class Team {
      * @return array Array associativo di team
      */
     public function ottieniTutti() {
-        $sql = "SELECT * FROM teams ORDER BY nome_team ASC";
+        $sql = "SELECT * FROM teams WHERE cancellato = 0 ORDER BY nome_team ASC";
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll();
@@ -112,7 +112,7 @@ class Team {
      */
     public function ottieniNonIscritti($gara_id) {
         $sql = "SELECT * FROM teams 
-                WHERE id NOT IN (SELECT team_id FROM iscritti_gara WHERE gara_id = :gara_id) 
+                WHERE cancellato = 0 AND id NOT IN (SELECT team_id FROM iscritti_gara WHERE gara_id = :gara_id) 
                 ORDER BY nome_team ASC";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':gara_id' => $gara_id]);

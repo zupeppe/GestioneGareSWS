@@ -6,7 +6,7 @@ require_once BASE_PATH . '/config/Database.php';
 use Database;
 use PDO;
 
-class AdminDatiController {
+class AdmindatiController {
 
     public function __construct() {
         // Controllo di sicurezza: solo admin
@@ -51,9 +51,9 @@ class AdminDatiController {
     public function eliminaTeam($id) {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db = Database::getIstanza()->getConnessione();
-            $stmt = $db->prepare("DELETE FROM teams WHERE id = :id");
+            $stmt = $db->prepare("UPDATE teams SET cancellato = 1 WHERE id = :id");
             if ($stmt->execute([':id' => $id])) {
-                $_SESSION['success'] = "Team eliminato con successo.";
+                $_SESSION['success'] = "Team disattivato con successo (Soft Delete).";
             } else {
                 $_SESSION['error'] = "Errore durante l'eliminazione del team.";
             }
@@ -65,9 +65,9 @@ class AdminDatiController {
     public function eliminaPilota($id) {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db = Database::getIstanza()->getConnessione();
-            $stmt = $db->prepare("DELETE FROM piloti_mio_team WHERE id = :id");
+            $stmt = $db->prepare("UPDATE piloti_mio_team SET cancellato = 1 WHERE id = :id");
             if ($stmt->execute([':id' => $id])) {
-                $_SESSION['success'] = "Pilota eliminato con successo.";
+                $_SESSION['success'] = "Pilota disattivato con successo (Soft Delete).";
             } else {
                 $_SESSION['error'] = "Errore durante l'eliminazione del pilota.";
             }

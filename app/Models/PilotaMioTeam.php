@@ -32,7 +32,7 @@ class PilotaMioTeam {
      * @return array Array associativo di piloti
      */
     public function ottieniTutti() {
-        $sql = "SELECT * FROM piloti_mio_team ORDER BY cognome, nome ASC";
+        $sql = "SELECT * FROM piloti_mio_team WHERE cancellato = 0 ORDER BY cognome, nome ASC";
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll();

@@ -93,9 +93,13 @@
                             <td><?php echo (int)$team['id']; ?></td>
                             <td><?php echo htmlspecialchars($team['nome_team']); ?></td>
                             <td style="text-align: center;">
-                                <form action="<?php echo BASE_URL; ?>/admindati/eliminateam/<?php echo (int)$team['id']; ?>" method="POST" class="inline-form" onsubmit="return confirm('Azione irreversibile. Procedere con l\'eliminazione del team?');">
-                                    <button type="submit" class="btn-danger">Elimina</button>
-                                </form>
+                                <?php if (!empty($team['cancellato'])): ?>
+                                    <span style="background: #6c757d; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold;">Cancellato</span>
+                                <?php else: ?>
+                                    <form action="<?php echo BASE_URL; ?>/admindati/eliminateam/<?php echo (int)$team['id']; ?>" method="POST" class="inline-form" onsubmit="return confirm('Azione irreversibile. Procedere con la disattivazione del team?');">
+                                        <button type="submit" class="btn-danger">Elimina</button>
+                                    </form>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -124,9 +128,13 @@
                             <td><?php echo htmlspecialchars($pilota['cognome']); ?></td>
                             <td><?php echo htmlspecialchars($pilota['nome']); ?></td>
                             <td style="text-align: center;">
-                                <form action="<?php echo BASE_URL; ?>/admindati/eliminapilota/<?php echo (int)$pilota['id']; ?>" method="POST" class="inline-form" onsubmit="return confirm('Azione irreversibile. Procedere con l\'eliminazione del pilota?');">
-                                    <button type="submit" class="btn-danger">Elimina</button>
-                                </form>
+                                <?php if (!empty($pilota['cancellato'])): ?>
+                                    <span style="background: #6c757d; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold;">Cancellato</span>
+                                <?php else: ?>
+                                    <form action="<?php echo BASE_URL; ?>/admindati/eliminapilota/<?php echo (int)$pilota['id']; ?>" method="POST" class="inline-form" onsubmit="return confirm('Azione irreversibile. Procedere con la disattivazione del pilota?');">
+                                        <button type="submit" class="btn-danger">Elimina</button>
+                                    </form>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>
