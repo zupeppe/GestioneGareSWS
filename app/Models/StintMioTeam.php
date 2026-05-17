@@ -32,7 +32,8 @@ class StintMioTeam {
         require_once __DIR__ . '/Gara.php';
         $garaModel = new Gara();
         $gara = $garaModel->ottieniPerId($gara_id);
-        $tempo_pit = isset($gara['tempo_minimo_pit']) ? (int)$gara['tempo_minimo_pit'] : 0;
+        $tempo_pit_secondi = isset($gara['tempo_minimo_pit']) ? (int)$gara['tempo_minimo_pit'] : 0;
+        $tempo_pit = (int)round($tempo_pit_secondi / 60);
 
         // Recupera tutti gli stint della gara e team specifici ordinati per ID (cronologicamente), escludendo cancellati
         $sql = "SELECT id, minuto_ingresso, durata_minuti FROM stint_mio_team WHERE gara_id = :gara_id AND (cancellato = 0 OR cancellato IS NULL)";
@@ -89,7 +90,8 @@ class StintMioTeam {
         require_once __DIR__ . '/Gara.php';
         $garaModel = new Gara();
         $gara = $garaModel->ottieniPerId($gara_id);
-        $tempo_pit = isset($gara['tempo_minimo_pit']) ? (int)$gara['tempo_minimo_pit'] : 0;
+        $tempo_pit_secondi = isset($gara['tempo_minimo_pit']) ? (int)$gara['tempo_minimo_pit'] : 0;
+        $tempo_pit = (int)round($tempo_pit_secondi / 60);
 
         // Trovo l'ultimo stint per prendere la sua uscita (solo per questo team, escludendo cancellati)
         $sqlUltimo = "SELECT minuto_ingresso, durata_minuti FROM stint_mio_team WHERE gara_id = :gara_id AND team_id = :team_id AND (cancellato = 0 OR cancellato IS NULL) ORDER BY id DESC LIMIT 1";

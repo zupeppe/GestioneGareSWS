@@ -120,10 +120,15 @@
                 $nome_fila = $sf['fila'];
                 $kart_rating = $sf['kart']['rating'] ?? 0;
                 $colore_hex = htmlspecialchars($sf['colore_hex'] ?? '#343a40');
+                $is_white = in_array(strtolower($colore_hex), ['#ffffff', '#fff']);
+                $text_color = $is_white ? '#000' : 'white';
+                $border_css = $is_white ? 'border: 2px solid #000;' : 'border: none;';
+                $text_colore_hex = $is_white ? '#000' : $colore_hex;
+                $btn_shadow = $is_white ? 'text-shadow: none;' : 'text-shadow: 1px 1px 3px rgba(0,0,0,0.8);';
             ?>
                 <?php if ($sf['kart']): ?>
                     <div style="flex: 1; min-width: 140px; display: flex; flex-direction: column; gap: 10px;">
-                        <button type="button" class="btn-fila" style="background-color: <?php echo $colore_hex; ?>; height: auto; min-height: 60px;" onclick="inviaSostituzione('<?php echo htmlspecialchars($nome_fila); ?>');">
+                        <button type="button" class="btn-fila" style="background-color: <?php echo $colore_hex; ?>; color: <?php echo $text_color; ?>; <?php echo $border_css; ?> <?php echo $btn_shadow; ?> height: auto; min-height: 60px;" onclick="inviaSostituzione('<?php echo htmlspecialchars($nome_fila); ?>');">
                             <div>Fila <?php echo htmlspecialchars($nome_fila); ?></div>
                             <div style="font-size: 0.9em; margin-top: 5px; opacity: 1; text-transform: none; text-shadow: none;">
                                 Kart: <?php echo getRatingBadge($kart_rating); ?>
@@ -134,7 +139,7 @@
                         <div style="padding: 10px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid <?php echo $colore_hex; ?>;">
                             <form action="<?php echo BASE_URL; ?>/spotter/aggiornaRatingFila/<?php echo $gara['id']; ?>" method="POST" style="display:flex; flex-direction:column; gap:8px;">
                                 <input type="hidden" name="kart_id" value="<?php echo $sf['kart']['id']; ?>">
-                                <div style="font-weight: bold; margin-bottom:5px; color: <?php echo $colore_hex; ?>;">Modifica Rating Kart <?php echo htmlspecialchars($sf['kart']['numero_kart']); ?></div>
+                                <div style="font-weight: bold; margin-bottom:5px; color: <?php echo $text_colore_hex; ?>;">Modifica Rating Kart <?php echo htmlspecialchars($sf['kart']['numero_kart']); ?></div>
                                 <div style="display: flex; gap: 10px; align-items: center;">
                                     <select name="rating" id="rating-<?php echo $sf['kart']['id']; ?>" style="flex: 1; padding: 8px; font-size: 1em; border: 1px solid #ccc; border-radius:4px; background: white;">
                                         <option value="0" <?php echo ($sf['kart']['rating']==0)?'selected':''; ?>>Ignoto</option>
@@ -144,18 +149,18 @@
                                         <option value="4" <?php echo ($sf['kart']['rating']==4)?'selected':''; ?>>💣 Bomba</option>
                                         <option value="5" <?php echo ($sf['kart']['rating']==5)?'selected':''; ?>>🏆 Best Lap</option>
                                     </select>
-                                    <button type="submit" class="btn-aggiornaRating" style="background: <?php echo $colore_hex; ?>; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 1.2em; padding: 15px 10px; width: 100%;">Aggiorna Rating</button>
+                                    <button type="submit" class="btn-aggiornaRating" style="background: <?php echo $colore_hex; ?>; color: <?php echo $text_color; ?>; <?php echo $border_css; ?> <?php echo $btn_shadow; ?> border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 1.2em; padding: 15px 10px; width: 100%;">Aggiorna Rating</button>
                                 </div>
                             </form>
                         </div>
                     </div>
                 <?php else: ?>
                     <div style="flex: 1; min-width: 140px; padding: 15px; border: 2px dashed <?php echo $colore_hex; ?>; border-radius: 10px; text-align: center; background: white;">
-                        <div style="font-weight: bold; color: <?php echo $colore_hex; ?>; margin-bottom: 10px;">Fila <?php echo htmlspecialchars($nome_fila); ?> Vuota</div>
+                        <div style="font-weight: bold; color: <?php echo $text_colore_hex; ?>; margin-bottom: 10px;">Fila <?php echo htmlspecialchars($nome_fila); ?> Vuota</div>
                         <form action="<?php echo BASE_URL; ?>/spotter/inizializzaFila/<?php echo $gara['id']; ?>" method="POST" style="display:flex; flex-direction:column; gap:5px;">
                             <input type="hidden" name="fila_nome" value="<?php echo htmlspecialchars($nome_fila); ?>">
                             <input type="number" name="numero_kart" placeholder="N° Kart" required style="padding:8px; width:100%; box-sizing:border-box; font-size:1.1em; border:1px solid #ccc; border-radius:4px;">
-                            <button type="submit" style="padding:10px; background:<?php echo $colore_hex; ?>; color:white; border:none; border-radius:4px; font-weight:bold; font-size:1em; cursor:pointer;">Inizializza Fila</button>
+                            <button type="submit" style="padding:10px; background:<?php echo $colore_hex; ?>; color: <?php echo $text_color; ?>; <?php echo $border_css; ?> border-radius:4px; font-weight:bold; font-size:1em; cursor:pointer;">Inizializza Fila</button>
                         </form>
                     </div>
                 <?php endif; ?>
@@ -165,7 +170,7 @@
                     <div style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid <?php echo $colore_hex; ?>;">
                         <form action="<?php echo BASE_URL; ?>/spotter/aggiornaRatingFila/<?php echo $gara['id']; ?>" method="POST" style="display:flex; flex-direction:column; gap:8px;">
                             <input type="hidden" name="fila_nome" value="<?php echo htmlspecialchars($nome_fila); ?>">
-                            <div style="font-weight: bold; margin-bottom: 5px; color: <?php echo $colore_hex; ?>;">Modifica Rating Kart Fila <?php echo htmlspecialchars($nome_fila); ?></div>
+                            <div style="font-weight: bold; margin-bottom: 5px; color: <?php echo $text_colore_hex; ?>;">Modifica Rating Kart Fila <?php echo htmlspecialchars($nome_fila); ?></div>
                             <div style="display: flex; gap: 10px; align-items: center;">
                                 <input type="number" name="numero_kart" placeholder="N° Kart" required style="flex: 1; padding: 8px; font-size: 1em; border: 1px solid #ccc; border-radius: 4px;">
                                 <input type="hidden" name="kart_id" value="">
@@ -177,7 +182,7 @@
                                     <option value="4">💣 Bomba</option>
                                     <option value="5">🏆 Best Lap</option>
                                 </select>
-                                <button type="submit" style="padding: 8px 15px; background: <?php echo $colore_hex; ?>; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">Aggiorna</button>
+                                <button type="submit" style="padding: 8px 15px; background: <?php echo $colore_hex; ?>; color: <?php echo $text_color; ?>; <?php echo $border_css; ?> border-radius: 4px; font-weight: bold; cursor: pointer;">Aggiorna</button>
                             </div>
                         </form>
                     </div>

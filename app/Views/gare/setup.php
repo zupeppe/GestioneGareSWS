@@ -159,8 +159,8 @@
                             <div class="autosave-status" id="autosave-piloti-status"></div>
                         </div>
                         <div>
-                            <label for="team_id">Team:</label>
-                            <select id="team_id" name="team_id" required>
+                            <label for="team_id_pilota">Team:</label>
+                            <select id="team_id_pilota" name="team_id" required>
                                 <option value="">-- Seleziona Team --</option>
                                 <?php foreach ($teamGestiti as $team): ?>
                                     <option value="<?php echo $team['team_id']; ?>">
@@ -329,6 +329,6 @@
             </form>
         </div>
     </div>
-    <script src="<?php echo BASE_URL; ?>/public/js/gare-setup.js"></script>
+    <script src="<?php echo BASE_URL; ?>/public/js/gare-setup.js?v=<?php echo time(); ?>"></script>
 </body>
 </html>

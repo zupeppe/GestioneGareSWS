@@ -1,6 +1,6 @@
 <nav style="background:#1f2937; color:#f9fafb; padding:12px 16px; display:flex; gap:16px; align-items:center; flex-wrap:wrap; margin-bottom:16px; justify-content:space-between;">
     <div style="display:flex; gap:16px; align-items:center;">
-        <a href="<?php echo BASE_URL; ?>/" style="color:#f9fafb; text-decoration:none; font-weight:bold;">🏠 Home</a>
+        <a href="<?php echo BASE_URL; ?>/public/" style="color:#f9fafb; text-decoration:none; font-weight:bold;">🏠 Home</a>
         
         <?php 
         $current_path = $_SERVER['REQUEST_URI'] ?? '';

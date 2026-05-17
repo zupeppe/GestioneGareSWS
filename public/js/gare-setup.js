@@ -513,6 +513,15 @@
         });
     }
 
+    function inizializzaModalNuovoTeam() {
+        const btn = document.getElementById('btn-modal-salva-team');
+        if (!btn) return;
+        btn.addEventListener('click', () => {
+            const form = document.getElementById('form-modal-nuovo-team');
+            if (form) form.submit();
+        });
+    }
+
     /**
      * Inizializza le checkbox per gestire lo stato 'gestito' dei team.
      */
@@ -546,6 +555,8 @@
                         mostraNotifica(data.message, 'success');
                         // Aggiorna dinamicamente il form dei piloti
                         aggiornaFormPiloti();
+                        // Mostra/Nascondi dinamicamente il blocco roster di questo team
+                        ricaricaRosterTeam();
                     } else {
                         // Errore: ripristina stato precedente
                         this.checked = !this.checked;
@@ -705,5 +716,6 @@
     inizializzaAutosaveFila();
     inizializzaIscrizioneTeam();
     inizializzaModalNuovoPilota();
+    inizializzaModalNuovoTeam();
     inizializzaCheckboxGestito();
 })();

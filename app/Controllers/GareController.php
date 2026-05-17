@@ -317,6 +317,18 @@ class GareController {
                     'ordine' => $ordine
                 ]);
 
+                if ($creato) {
+                    $kartGaraModel = new \App\Models\KartGara();
+                    // Trova il max numero_kart >= 9000
+                    $db = \Database::getIstanza()->getConnessione();
+                    $stmt = $db->prepare("SELECT MAX(CAST(numero_kart AS UNSIGNED)) FROM kart_gara WHERE gara_id = ? AND CAST(numero_kart AS UNSIGNED) >= 9000");
+                    $stmt->execute([$gara_id]);
+                    $max = $stmt->fetchColumn();
+                    $nuovoNumeroKart = $max ? (int)$max + 1 : 9001;
+                    
+                    $kartGaraModel->creaIniziale($gara_id, $nuovoNumeroKart, $nome_colore);
+                }
+
                 if ($this->eRichiestaAjax()) {
                     if (!$creato) {
                         $this->rispondiJson(500, ['status' => 'error', 'message' => 'Impossibile aggiungere la fila pit.']);

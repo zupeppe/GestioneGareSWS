@@ -316,7 +316,7 @@
                                         </form>
                                     <?php else: ?>
                                         <?php echo htmlspecialchars($ingressoHHMM); ?>
-                                        <div style="font-size:0.8em; color:#666;">(+<?php echo htmlspecialchars($gara['tempo_minimo_pit']); ?>m pit)</div>
+                                        <div style="font-size:0.8em; color:#666;">(+<?php echo htmlspecialchars((int)round($gara['tempo_minimo_pit']/60)); ?>m pit)</div>
                                     <?php endif; ?>
                                 </td>
                                 <td>
