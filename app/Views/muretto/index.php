@@ -36,6 +36,12 @@
         .pannello-strategia { text-align: left; }
         
         @media (max-width: 768px) { .pannello-superiore { grid-template-columns: 1fr; } }
+        .layout-muretto { display: flex; gap: 20px; flex-wrap: wrap; }
+        .colonna-stint { flex: 2; min-width: 350px; }
+        .colonna-radar { flex: 1; min-width: 250px; }
+        @media (max-width: 1024px) {
+            .colonna-stint, .colonna-radar { flex: 1 1 100%; min-width: 100%; }
+        }
         .riga-allerta { background-color: #f8d7da !important; color: #721c24; border: 2px solid #f5c6cb; }
         .table-warning { background-color: #fff3cd !important; color: #856404; border: 2px solid #ffeeba; }
         
@@ -264,9 +270,9 @@
 
         <hr style="margin: 40px 0;">
 
-        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+        <div class="layout-muretto">
             <!-- Colonna 1: Timeline (70%) -->
-            <div style="flex: 2; min-width: 350px;" id="refresh-storico-stint">
+            <div class="colonna-stint" id="refresh-storico-stint">
                 <h2>Storico Stint (Timeline a Cascata)</h2>
                 <table>
                     <thead>
@@ -412,7 +418,7 @@
             <?php endif; ?>
 
             <!-- Colonna 2: Radar Avversari (30%) -->
-            <div style="flex: 1; min-width: 250px;" id="refresh-radar">
+            <div class="colonna-radar" id="refresh-radar">
                 <h2 style="color: #0056b3;">File Box (Pit Lane)</h2>
                 <div id="file-pit-container" style="display: flex; flex-direction: column; gap: 10px;">
                     <?php foreach ($kart_in_fila as $colore => $dati): ?>

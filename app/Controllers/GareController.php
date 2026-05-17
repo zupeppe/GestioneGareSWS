@@ -391,10 +391,10 @@ class GareController {
     public function aggiungiPilotaGara() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $gara_id = (int)($_POST['gara_id'] ?? 0);
-            $pilota_id = (int)($_POST['pilota_id'] ?? 0);
+            $piloti_ids = $_POST['piloti_ids'] ?? [];
             $team_id = (int)($_POST['team_id'] ?? 0);
 
-            if ($gara_id > 0 && $pilota_id > 0 && $team_id > 0) {
+            if ($gara_id > 0 && !empty($piloti_ids) && is_array($piloti_ids) && $team_id > 0) {
                 // Validazione: verifica che il team sia gestito per questa gara
                 $iscrittoModel = new IscrittoGara();
                 $teamGestito = $iscrittoModel->ottieniPerTeamEGara($gara_id, $team_id);
@@ -406,40 +406,46 @@ class GareController {
                     return;
                 }
 
-                // Validazione: verifica che il pilota non sia già iscritto a qualsiasi team in questa gara
                 $pilotiGaraModel = new PilotiGara();
-                $pilotaEsistente = $pilotiGaraModel->ottieniPilotaPerGara($gara_id, $pilota_id);
-                if ($pilotaEsistente) {
-                    if ($this->eRichiestaAjax()) {
-                        $this->rispondiJson(422, ['status' => 'error', 'message' => 'Questo pilota è già iscritto a un team in questa gara.']);
-                    }
-                    $_SESSION['error'] = "Questo pilota è già iscritto a un team in questa gara.";
-                    return;
-                }
+                $pilotiAggiunti = [];
+                $errori = [];
 
-                $creato = $pilotiGaraModel->crea($gara_id, $pilota_id, $team_id);
+                foreach ($piloti_ids as $p_id) {
+                    $pilota_id = (int)$p_id;
+                    if ($pilota_id <= 0) continue;
+
+                    // Validazione: verifica che il pilota non sia già iscritto a qualsiasi team in questa gara
+                    $pilotaEsistente = $pilotiGaraModel->ottieniPilotaPerGara($gara_id, $pilota_id);
+                    if ($pilotaEsistente) {
+                        $errori[] = "Pilota ID $pilota_id già iscritto.";
+                        continue;
+                    }
+
+                    $creato = $pilotiGaraModel->crea($gara_id, $pilota_id, $team_id);
+                    if ($creato) {
+                        $pilotiAggiunti[] = $pilota_id;
+                    } else {
+                        $errori[] = "Errore salvataggio pilota ID $pilota_id.";
+                    }
+                }
 
                 if ($this->eRichiestaAjax()) {
-                    if (!$creato) {
-                        $this->rispondiJson(500, ['status' => 'error', 'message' => 'Impossibile aggiungere il pilota.']);
+                    if (empty($pilotiAggiunti) && !empty($errori)) {
+                        $this->rispondiJson(422, ['status' => 'error', 'message' => implode(' ', $errori)]);
                     }
-                    $roster = $pilotiGaraModel->ottieniPerGara($gara_id);
-                    $nuovoPilota = null;
-                    foreach (array_reverse($roster) as $pilota) {
-                        if ((int)$pilota['pilota_id'] === $pilota_id) {
-                            $nuovoPilota = $pilota;
-                            break;
-                        }
-                    }
-                    $this->rispondiJson(200, ['status' => 'success', 'data' => $nuovoPilota]);
+                    $this->rispondiJson(200, [
+                        'status' => 'success',
+                        'message' => 'Piloti aggiunti con successo.',
+                        'data' => $pilotiAggiunti
+                    ]);
                 }
 
-                $_SESSION['success'] = "Pilota aggiunto al roster della gara.";
+                $_SESSION['success'] = "Piloti aggiunti al roster della gara.";
             } else {
                 if ($this->eRichiestaAjax()) {
-                    $this->rispondiJson(422, ['status' => 'error', 'message' => 'Pilota non selezionato.']);
+                    $this->rispondiJson(422, ['status' => 'error', 'message' => 'Nessun pilota selezionato o dati mancanti.']);
                 }
-                $_SESSION['error'] = "Pilota non selezionato.";
+                $_SESSION['error'] = "Nessun pilota selezionato o dati mancanti.";
             }
             header('Location: ' . BASE_URL . '/gare/setup/' . $gara_id);
             exit;

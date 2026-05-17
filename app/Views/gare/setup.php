@@ -25,6 +25,44 @@
         .autosave-status { font-size: 0.85em; color: #6c757d; margin-top: 8px; min-height: 18px; }
         .autosave-status.success { color: #198754; }
         .autosave-status.error { color: #dc3545; }
+
+        /* Stili moderni per Setup Piloti */
+        .modern-form-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            margin-bottom: 25px;
+        }
+        .modern-form-card h2 { margin-top: 0; color: #1e293b; font-size: 1.5rem; margin-bottom: 20px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
+        .modern-multiselect {
+            width: 100%;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 8px;
+            background: #ffffff;
+            font-family: inherit;
+            color: #334155;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            scrollbar-width: thin;
+        }
+        .modern-multiselect:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
+        .modern-multiselect option {
+            padding: 10px 14px; margin-bottom: 4px; border-radius: 6px; cursor: pointer; transition: all 0.15s ease; font-size: 14px;
+        }
+        .modern-multiselect option:hover { background-color: #f1f5f9; }
+        .modern-multiselect option:checked {
+            background: #eff6ff !important;
+            color: #1d4ed8;
+            font-weight: 600;
+        }
+        .modern-btn-primary {
+            background-color: #3b82f6; color: white; padding: 10px 20px; border: none; border-radius: 6px;
+            font-weight: 600; cursor: pointer; transition: background-color 0.2s; width: 100%; margin-top: 15px; font-size: 1rem;
+        }
+        .modern-btn-primary:hover { background-color: #2563eb; }
     </style>
 </head>
 <body>
@@ -141,15 +179,15 @@
             </div>
 
             <!-- SEZIONE 2: Roster Piloti Team -->
-            <div class="form-section avviso-gara-corso" style="<?php echo $haStintAttivi ? 'opacity: 0.6; pointer-events: none;' : ''; ?>">
+            <div class="modern-form-card avviso-gara-corso" style="<?php echo $haStintAttivi ? 'opacity: 0.6; pointer-events: none;' : ''; ?>">
                 <h2>2. Roster Piloti Team</h2>
                 <form action="<?php echo BASE_URL; ?>/gare/aggiungiPilotaGara" method="POST" id="form-aggiungi-pilota">
                     <input type="hidden" name="gara_id" value="<?php echo $gara['id']; ?>">
-                    <div class="form-group" style="display: flex; align-items: flex-end; gap: 10px;">
-                        <div style="flex-grow: 1;">
-                            <label for="pilota_id">Aggiungi Pilota al Roster:</label>
-                            <select id="pilota_id" name="pilota_id" required>
-                                <option value="">-- Seleziona Pilota --</option>
+                    <div class="form-group" style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 0;">
+                        <div style="flex: 2; min-width: 250px;">
+                            <label for="pilota_id" style="color: #475569; font-size: 1.05rem;">Seleziona Piloti:</label>
+                            <div style="font-size: 0.85em; color: #94a3b8; margin-bottom: 10px;">Tieni premuto CTRL (o CMD) per selezione multipla</div>
+                            <select id="pilota_id" name="piloti_ids[]" required multiple size="6" class="modern-multiselect" style="max-width: 100%;">
                                 <?php foreach ($pilotiDisponibili as $pilota): ?>
                                     <option value="<?php echo $pilota['id']; ?>">
                                         <?php echo htmlspecialchars($pilota['cognome'] . ' ' . $pilota['nome']); ?>
@@ -158,27 +196,33 @@
                             </select>
                             <div class="autosave-status" id="autosave-piloti-status"></div>
                         </div>
-                        <div>
-                            <label for="team_id_pilota">Team:</label>
-                            <select id="team_id_pilota" name="team_id" required>
-                                <option value="">-- Seleziona Team --</option>
-                                <?php foreach ($teamGestiti as $team): ?>
-                                    <option value="<?php echo $team['team_id']; ?>">
-                                        <?php echo htmlspecialchars($team['nome_team']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                            <div class="autosave-status" id="autosave-team-status"></div>
-                        </div>
-                        <div>
-                            <button type="button" class="btn btn-secondary" onclick="openModal('modal-nuovo-pilota')" style="background:#6c757d; height: 35px; line-height: 15px;">+ Nuovo</button>
+                        <div style="flex: 1; min-width: 200px; display: flex; flex-direction: column;">
+                            <div style="margin-bottom: 20px;">
+                                <label for="team_id_pilota" style="color: #475569; font-size: 1.05rem; margin-bottom: 10px; display: block;">Assegna al Team:</label>
+                                <select id="team_id_pilota" name="team_id" required class="modern-multiselect" style="height: auto; max-width: 100%; padding: 12px; font-size: 1rem;">
+                                    <option value="">-- Seleziona Team --</option>
+                                    <?php foreach ($teamGestiti as $team): ?>
+                                        <option value="<?php echo $team['team_id']; ?>">
+                                            <?php echo htmlspecialchars($team['nome_team']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <div class="autosave-status" id="autosave-team-status"></div>
+                                <button type="button" onclick="openModal('modal-nuovo-pilota')" style="background:none; border:none; color:#3b82f6; cursor:pointer; padding:5px 0; font-weight:600; font-size: 0.9em; margin-top: 10px; text-align: left;">+ Crea Nuovo Pilota</button>
+                            </div>
+                            
+                            <div style="margin-top: auto;">
+                                <button type="button" class="modern-btn-primary" id="btn-aggiungi-roster-pilota">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                                    Aggiungi Piloti Selezionati
+                                </button>
+                            </div>
                         </div>
                     </div>
-                    <button type="button" class="btn" id="btn-aggiungi-roster-pilota">Aggiungi pilota</button>
                 </form>
 
                 <!-- Visualizzazione Piloti per Team -->
-                <div id="roster-per-team" style="margin-top: 20px;">
+                <div id="roster-per-team" style="margin-top: 30px;">
                     <?php include BASE_PATH . '/app/Views/gare/_roster_team.php'; ?>
                 </div>
             </div>

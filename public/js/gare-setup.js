@@ -277,27 +277,16 @@
             });
 
             console.log('Response aggiunta pilota:', response);
-            const pilota = response.data;
-            if (!pilota || !pilota.id) {
-                console.error('Dati pilota non validi:', pilota);
-                return;
-            }
-
-            console.log('Pilota aggiunto con successo:', pilota);
+            console.log('Piloti aggiunti con successo');
 
             // Aggiorna dinamicamente le tabelle dei team
             console.log('Aggiornamento roster team...');
             ricaricaRosterTeam();
 
-            // Rimuovi il pilota dal select
+            // Rimuovi i piloti dal select
             const selectPilota = document.getElementById('pilota_id');
             if (selectPilota) {
-                const optionToRemove = selectPilota.querySelector(`option[value="${String(pilota.pilota_id)}"]`);
-                if (optionToRemove) {
-                    optionToRemove.remove();
-                    console.log('Pilota rimosso dal select');
-                }
-                selectPilota.value = '';
+                Array.from(selectPilota.selectedOptions).forEach(opt => opt.remove());
             }
 
             // Resetta il form
