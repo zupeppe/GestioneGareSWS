@@ -141,4 +141,32 @@ class MonitoraggioPit {
         $stmt = $this->db->prepare($sql);
         return $stmt->execute([':id' => $id]);
     }
+
+    /**
+     * Recupera l'intero storico dei cambi di una gara, inclusi gli annullati.
+     * 
+     * @param int $gara_id ID della gara
+     * @return array
+     */
+    public function getStoricoGara($gara_id) {
+        $sql = "SELECT 
+                    m.id, 
+                    m.timestamp, 
+                    m.fila_colore,
+                    m.stato,
+                    ig.numero_gara,
+                    t.nome_team,
+                    kl.numero_kart AS kart_lasciato,
+                    kp.numero_kart AS kart_preso
+                FROM monitoraggio_pit m
+                JOIN iscritti_gara ig ON m.iscritto_gara_id = ig.id
+                JOIN teams t ON ig.team_id = t.id
+                JOIN kart_gara kl ON m.kart_lasciato_id = kl.id
+                JOIN kart_gara kp ON m.kart_preso_id = kp.id
+                WHERE m.gara_id = :gara_id
+                ORDER BY m.timestamp DESC";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':gara_id' => $gara_id]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

@@ -13,6 +13,7 @@
             
             <?php if (in_array($ruolo, ['admin', 'team_manager', 'muretto'])): ?>
                 <a href="<?php echo BASE_URL; ?>/muretto/multi/<?php echo $gara_id_param; ?>" style="color:#f9fafb; text-decoration:none; font-weight:bold;">👥 Muretto Multi-Team</a>
+                <a href="<?php echo BASE_URL; ?>/statistiche/index/<?php echo $gara_id_param; ?>" style="color:#f9fafb; text-decoration:none; font-weight:bold;">📊 Statistiche</a>
             <?php endif; ?>
             
             <?php if (in_array($ruolo, ['admin', 'team_manager'])): ?>

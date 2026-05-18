@@ -252,6 +252,49 @@
             </form>
         </div>
 
+        <!-- 5. STORICO COMPLETO -->
+        <h2 class="section-title">Storico Cambi Pit</h2>
+        <details style="margin-bottom: 30px; background: white; padding: 10px; border-radius: 8px; border: 1px solid #ccc; cursor: pointer;">
+            <summary style="font-size: 1.2em; font-weight: bold; outline: none;">Visualizza Storico Completo</summary>
+            <div id="refresh-storico-cambi" style="margin-top: 15px; overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                    <thead>
+                        <tr style="background: #f4f7f6;">
+                            <th style="padding: 8px; border-bottom: 2px solid #ccc;">Ora</th>
+                            <th style="padding: 8px; border-bottom: 2px solid #ccc;">Team</th>
+                            <th style="padding: 8px; border-bottom: 2px solid #ccc;">Fila</th>
+                            <th style="padding: 8px; border-bottom: 2px solid #ccc;">Stato</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($storicoCambi as $cambio): 
+                            $annullato = ($cambio['stato'] === 'annullato');
+                            $cssRiga = $annullato ? 'text-decoration: line-through; opacity: 0.6;' : '';
+                        ?>
+                        <tr style="<?php echo $cssRiga; ?>">
+                            <td style="padding: 8px; border-bottom: 1px solid #eee;"><?php echo date('H:i:s', strtotime($cambio['timestamp'])); ?></td>
+                            <td style="padding: 8px; border-bottom: 1px solid #eee;">
+                                <strong>N° <?php echo htmlspecialchars($cambio['numero_gara']); ?></strong> - <?php echo htmlspecialchars($cambio['nome_team']); ?><br>
+                                <span style="font-size: 0.9em; color: #666;">Lascia: <?php echo htmlspecialchars($cambio['kart_lasciato']); ?> &rarr; Prende: <?php echo htmlspecialchars($cambio['kart_preso']); ?></span>
+                            </td>
+                            <td style="padding: 8px; border-bottom: 1px solid #eee;">Fila <?php echo htmlspecialchars($cambio['fila_colore']); ?></td>
+                            <td style="padding: 8px; border-bottom: 1px solid #eee;">
+                                <?php if ($annullato): ?>
+                                    <span style="color: #dc3545; font-weight: bold; font-size: 0.8em;">ANNULLATO</span>
+                                <?php else: ?>
+                                    <span style="color: #28a745; font-weight: bold; font-size: 0.8em;">ATTIVO</span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                        <?php if (empty($storicoCambi)): ?>
+                        <tr><td colspan="4" style="padding: 10px; text-align: center;">Nessun cambio registrato.</td></tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </details>
+
     </div>
 
     <script>
@@ -328,6 +371,7 @@
                     aggiornaSezioneDaHtml(documentoRemoto, 'refresh-stato-box');
                     aggiornaSezioneDaHtml(documentoRemoto, 'refresh-lista-team');
                     aggiornaSezioneDaHtml(documentoRemoto, 'refresh-file-kart');
+                    aggiornaSezioneDaHtml(documentoRemoto, 'refresh-storico-cambi');
                 })
                 .catch(function (errore) {
                     console.error('Errore polling spotter:', errore);

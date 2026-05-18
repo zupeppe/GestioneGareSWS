@@ -171,12 +171,25 @@ class KartGara {
     }
 
     /**
-     * Aggiorna il rating del kart.
+     * Aggiorna il rating del kart e salva lo storico.
      */
     public function aggiornaRating($kart_id, $rating) {
-        $sql = "UPDATE kart_gara SET rating = :rating WHERE id = :id";
-        $stmt = $this->db->prepare($sql);
-        return $stmt->execute([':rating' => $rating, ':id' => $kart_id]);
+        $this->db->beginTransaction();
+        try {
+            $sql = "UPDATE kart_gara SET rating = :rating WHERE id = :id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':rating' => $rating, ':id' => $kart_id]);
+
+            $sqlHistory = "INSERT INTO kart_rating_history (kart_id, rating) VALUES (:kart_id, :rating)";
+            $stmtHistory = $this->db->prepare($sqlHistory);
+            $stmtHistory->execute([':kart_id' => $kart_id, ':rating' => $rating]);
+
+            $this->db->commit();
+            return true;
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            return false;
+        }
     }
 
     /**

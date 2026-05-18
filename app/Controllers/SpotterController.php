@@ -62,6 +62,7 @@ class SpotterController {
         $ultimiCambi = $monitoraggioModel->ottieniUltimiCambi($gara_id, 10);
         $ultimoCambio = $monitoraggioModel->ottieniUltimoCambio($gara_id);
         $ultimoAnnullato = $monitoraggioModel->ottieniUltimoAnnullato($gara_id);
+        $storicoCambi = $monitoraggioModel->getStoricoGara($gara_id);
 
         require_once BASE_PATH . '/app/Views/spotter/index.php';
     }

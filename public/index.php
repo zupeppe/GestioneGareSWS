@@ -60,8 +60,8 @@ if ($isLoggedIn) {
             $accessoNegato = true;
         }
     } elseif ($ruolo === 'muretto') {
-        // Solo Muretto, Spotter, Home, Auth
-        $allowed = ['MurettoController', 'SpotterController', 'HomeController', 'AuthController'];
+        // Solo Muretto, Spotter, Home, Auth, Statistiche
+        $allowed = ['MurettoController', 'SpotterController', 'HomeController', 'AuthController', 'StatisticheController'];
         if (!in_array($controllerName, $allowed)) {
             $accessoNegato = true;
         }

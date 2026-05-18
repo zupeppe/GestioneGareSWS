@@ -149,7 +149,7 @@ class MurettoController {
         $media_stint_formattata = sprintf("%02d:%02d", $minuti_media, $secondi_media);
 
         // Calcolo Tempo Eccedente
-        $tempo_eccedente = $minutiResidui - $tempo_massimo_copribile_totale;
+        $tempo_eccedente = $tempo_massimo_copribile_totale - $minutiResidui;
         if ($tempo_eccedente < 0) {
             $tempo_eccedente = 0;
         }
